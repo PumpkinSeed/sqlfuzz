@@ -2,6 +2,18 @@ package drivers
 
 import "log"
 
+type Type int16
+
+const (
+	String Type = iota
+	Uint
+	Enum
+	Bool
+	Json
+	Time
+	Unknown
+)
+
 type Flags struct {
 	Username string
 	Password string
@@ -14,6 +26,8 @@ type Flags struct {
 type Driver interface {
 	Connection() string
 	Driver() string
+	Insert(fields []string, table string) string
+	MapField(string) (Type, []string)
 }
 
 func New(f Flags) Driver {

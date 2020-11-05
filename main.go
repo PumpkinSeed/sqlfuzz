@@ -10,10 +10,16 @@ import (
 	"log"
 )
 
+var (
+	f flags
+	db *sql.DB
+)
+
 type flags struct {
 	driver drivers.Flags
 
 	table string
+	parsed bool
 }
 
 type fieldDescriptor struct {
@@ -26,25 +32,16 @@ type fieldDescriptor struct {
 }
 
 func main() {
-	f := parse()
-
-	d := drivers.New(f.driver)
-	db, err := connect(d)
+	fields, err := describe()
 	if err != nil {
 		log.Fatal(err.Error())
 	}
+
 	defer db.Close()
-
-	fields, err := describe(db, f.table)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-
 
 }
 
-func parse() flags {
-	var f flags
+func parseFlags() {
 	flag.StringVar(&f.driver.Username, "u", "", "Username for the database connection")
 	flag.StringVar(&f.driver.Password, "p", "", "Password for the database connection")
 	flag.StringVar(&f.driver.Database, "d", "", "Database of the database connection")
@@ -54,15 +51,19 @@ func parse() flags {
 	flag.StringVar(&f.table, "t", "", "Table for fuzzing")
 	flag.Parse()
 
-	return f
+	f.parsed = true
 }
 
-func connect(d drivers.Driver) (*sql.DB, error) {
-	return sql.Open(d.Driver(), d.Connection())
+func connect(d drivers.Driver) {
+	var err error
+	db, err = sql.Open(d.Driver(), d.Connection())
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
-func describe(db *sql.DB, table string) ([]fieldDescriptor, error) {
-	results, err := db.Query(fmt.Sprintf("DESCRIBE %s;", table))
+func describe() ([]fieldDescriptor, error) {
+	results, err := connection().Query(fmt.Sprintf("DESCRIBE %s;", flagsOut().table))
 	if err != nil {
 		return nil, err
 	}
@@ -82,6 +83,58 @@ func describe(db *sql.DB, table string) ([]fieldDescriptor, error) {
 	return fields, nil
 }
 
-func fuzz(fields) error {
+func fuzz(fields []fieldDescriptor, table string) error {
 
+	return nil
+}
+
+func exec(fields []fieldDescriptor, table string) error {
+	driver := drivers.New(flagsOut().driver)
+
+	var f []string
+	var values []interface{}
+	for _, field := range fields {
+		f = append(f, field.Field)
+
+
+		values = append(values, genField(driver, field.Type))
+	}
+	driver.Insert(f, flagsOut().table)
+	ins, err := connection().Prepare(driver.Insert(f, flagsOut().table))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+
+	ins.Exec(values...)
+
+	return nil
+}
+
+func genField(driver drivers.Driver, t string) interface{} {
+	typ, options := driver.MapField(t)
+	switch typ {
+	case drivers.String:
+	case drivers.Uint:
+	case drivers.Enum:
+		fmt.Println(options)
+	}
+
+	return nil
+}
+
+func flagsOut() flags {
+	if !f.parsed {
+		parseFlags()
+	}
+
+	return f
+}
+
+func connection() *sql.DB {
+	if db == nil {
+		connect(drivers.New(flagsOut().driver))
+	}
+
+	return db
 }
