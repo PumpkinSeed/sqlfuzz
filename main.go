@@ -4,34 +4,39 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
+	"log"
+	"math/rand"
+	"time"
+
 	"github.com/PumpkinSeed/sqlfuzz/drivers"
+	"github.com/brianvoe/gofakeit/v5"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/volatiletech/null"
-	"log"
 )
 
 var (
-	f flags
+	f  flags
 	db *sql.DB
 )
 
 type flags struct {
 	driver drivers.Flags
 
-	table string
+	table  string
 	parsed bool
 }
 
 type fieldDescriptor struct {
-	Field string
-	Type string
-	Null string
-	Key string
+	Field   string
+	Type    string
+	Null    string
+	Key     string
 	Default null.String
-	Extra string
+	Extra   string
 }
 
 func main() {
+	gofakeit.Seed(0)
 	fields, err := describe()
 	if err != nil {
 		log.Fatal(err.Error())
@@ -39,16 +44,20 @@ func main() {
 
 	defer db.Close()
 
+	err = fuzz(fields)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 }
 
 func parseFlags() {
-	flag.StringVar(&f.driver.Username, "u", "", "Username for the database connection")
-	flag.StringVar(&f.driver.Password, "p", "", "Password for the database connection")
-	flag.StringVar(&f.driver.Database, "d", "", "Database of the database connection")
-	flag.StringVar(&f.driver.Host, "h", "localhost", "Host for the database connection")
+	flag.StringVar(&f.driver.Username, "u", "fluidpay", "Username for the database connection")
+	flag.StringVar(&f.driver.Password, "p", "fluidpay", "Password for the database connection")
+	flag.StringVar(&f.driver.Database, "d", "fluidpay", "Database of the database connection")
+	flag.StringVar(&f.driver.Host, "h", "10.0.0.7", "Host for the database connection")
 	flag.StringVar(&f.driver.Port, "P", "3306", "Port for the database connection")
 	flag.StringVar(&f.driver.Driver, "D", "mysql", "Driver for the database connection (mysql, postgres, etc.)")
-	flag.StringVar(&f.table, "t", "", "Table for fuzzing")
+	flag.StringVar(&f.table, "t", "transactions", "Table for fuzzing")
 	flag.Parse()
 
 	f.parsed = true
@@ -83,19 +92,17 @@ func describe() ([]fieldDescriptor, error) {
 	return fields, nil
 }
 
-func fuzz(fields []fieldDescriptor, table string) error {
-
-	return nil
+func fuzz(fields []fieldDescriptor) error {
+	return exec(fields)
 }
 
-func exec(fields []fieldDescriptor, table string) error {
+func exec(fields []fieldDescriptor) error {
 	driver := drivers.New(flagsOut().driver)
 
 	var f []string
 	var values []interface{}
 	for _, field := range fields {
 		f = append(f, field.Field)
-
 
 		values = append(values, genField(driver, field.Type))
 	}
@@ -105,19 +112,36 @@ func exec(fields []fieldDescriptor, table string) error {
 		log.Fatal(err)
 	}
 
-
-	ins.Exec(values...)
-
-	return nil
+	_, err = ins.Exec(values...)
+	return err
 }
 
 func genField(driver drivers.Driver, t string) interface{} {
 	typ, options := driver.MapField(t)
 	switch typ {
 	case drivers.String:
+		return randomString(2)
 	case drivers.Uint:
+		return gofakeit.Number(1, 200)
 	case drivers.Enum:
-		fmt.Println(options)
+		return options[gofakeit.Number(0, len(options)-1)]
+	case drivers.Bool:
+		if gofakeit.Number(1, 200)%2 == 0 {
+			return true
+		}
+		return false
+	case drivers.Json:
+		return fmt.Sprintf(
+			`{"%s": "%s", "%s": "%s"}`,
+			gofakeit.Password(true, true, false, false, false, 6),
+			gofakeit.Password(true, true, false, false, false, 6),
+			gofakeit.Password(true, true, false, false, false, 6),
+			gofakeit.Password(true, true, false, false, false, 6),
+		)
+	case drivers.Time:
+		return gofakeit.Date()
+	case drivers.Unknown:
+		log.Fatalf("Unknown field type: %s", t)
 	}
 
 	return nil
@@ -137,4 +161,19 @@ func connection() *sql.DB {
 	}
 
 	return db
+}
+
+func randomString(length int) string {
+	var charset = "abcdefghijklmnopqrstuvwxyz" +
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+	var seededRand = rand.New(
+		rand.NewSource(time.Now().UnixNano()))
+
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[seededRand.Intn(len(charset))]
+	}
+
+	return string(b)
 }
