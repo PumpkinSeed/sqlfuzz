@@ -2,10 +2,12 @@ package main
 
 import (
 	"database/sql"
+	"encoding/base64"
 	"flag"
 	"fmt"
 	"log"
 	"math/rand"
+	"sync"
 	"time"
 
 	"github.com/PumpkinSeed/sqlfuzz/drivers"
@@ -22,6 +24,8 @@ var (
 type flags struct {
 	driver drivers.Flags
 
+	num int
+	workers int
 	table  string
 	parsed bool
 }
@@ -51,14 +55,16 @@ func main() {
 }
 
 func parseFlags() {
-	flag.StringVar(&f.driver.Username, "u", "fluidpay", "Username for the database connection")
-	flag.StringVar(&f.driver.Password, "p", "fluidpay", "Password for the database connection")
-	flag.StringVar(&f.driver.Database, "d", "fluidpay", "Database of the database connection")
-	flag.StringVar(&f.driver.Host, "h", "10.0.0.7", "Host for the database connection")
-	flag.StringVar(&f.driver.Port, "P", "3306", "Port for the database connection")
-	flag.StringVar(&f.driver.Driver, "D", "mysql", "Driver for the database connection (mysql, postgres, etc.)")
-	flag.StringVar(&f.table, "t", "transactions", "Table for fuzzing")
-	flag.Parse()
+	if !f.parsed {
+		flag.StringVar(&f.driver.Username, "u", "fluidpay", "Username for the database connection")
+		flag.StringVar(&f.driver.Password, "p", "fluidpay", "Password for the database connection")
+		flag.StringVar(&f.driver.Database, "d", "fluidpay", "Database of the database connection")
+		flag.StringVar(&f.driver.Host, "h", "10.0.0.7", "Host for the database connection")
+		flag.StringVar(&f.driver.Port, "P", "3306", "Port for the database connection")
+		flag.StringVar(&f.driver.Driver, "D", "mysql", "Driver for the database connection (mysql, postgres, etc.)")
+		flag.StringVar(&f.table, "t", "transactions", "Table for fuzzing")
+		flag.Parse()
+	}
 
 	f.parsed = true
 }
@@ -93,7 +99,32 @@ func describe() ([]fieldDescriptor, error) {
 }
 
 func fuzz(fields []fieldDescriptor) error {
+	numJobs := 10000
+	workers := 100
+	jobs := make(chan struct{}, numJobs)
+	wg := &sync.WaitGroup{}
+	wg.Add(workers)
+	for w := 0; w < workers; w++ {
+		go worker(jobs, fields, wg)
+	}
+
+	for j := 0; j < numJobs; j++ {
+		jobs <- struct{}{}
+	}
+	close(jobs)
+	wg.Wait()
+
 	return exec(fields)
+}
+
+func worker( jobs <-chan struct{}, fields []fieldDescriptor, wg *sync.WaitGroup) {
+	for range jobs {
+		if err := exec(fields); err != nil {
+			panic(err)
+		}
+	}
+
+	wg.Done()
 }
 
 func exec(fields []fieldDescriptor) error {
@@ -117,14 +148,26 @@ func exec(fields []fieldDescriptor) error {
 }
 
 func genField(driver drivers.Driver, t string) interface{} {
-	typ, options := driver.MapField(t)
-	switch typ {
+	field := driver.MapField(t)
+	switch field.Type {
 	case drivers.String:
-		return randomString(2)
-	case drivers.Uint:
-		return gofakeit.Number(1, 200)
+		if field.Length > 0 {
+			return randomString(field.Length)
+		}
+		return randomString(20)
+	case drivers.Int16:
+		return gofakeit.Number(1, 32766)
+	case drivers.Int32:
+		return gofakeit.Number(1, 2147483647)
+	case drivers.Float:
+		// TODO add string
+		return gofakeit.Number(1, 2147483647)
+	case drivers.Blob:
+		return base64.StdEncoding.EncodeToString([]byte(randomString(12)))
+	case drivers.Text:
+		return randomString(12)
 	case drivers.Enum:
-		return options[gofakeit.Number(0, len(options)-1)]
+		return field.Enum[gofakeit.Number(0, len(field.Enum)-1)]
 	case drivers.Bool:
 		if gofakeit.Number(1, 200)%2 == 0 {
 			return true
@@ -163,7 +206,7 @@ func connection() *sql.DB {
 	return db
 }
 
-func randomString(length int) string {
+func randomString(length int16) string {
 	var charset = "abcdefghijklmnopqrstuvwxyz" +
 		"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 

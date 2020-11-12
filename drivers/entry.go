@@ -6,7 +6,11 @@ type Type int16
 
 const (
 	String Type = iota
-	Uint
+	Int16
+	Int32
+	Float
+	Blob // base64
+	Text
 	Enum
 	Bool
 	Json
@@ -23,11 +27,17 @@ type Flags struct {
 	Driver string
 }
 
+type Field struct {
+	Type Type
+	Length int16
+	Enum []string
+}
+
 type Driver interface {
 	Connection() string
 	Driver() string
 	Insert(fields []string, table string) string
-	MapField(string) (Type, []string)
+	MapField(string) Field
 }
 
 func New(f Flags) Driver {
