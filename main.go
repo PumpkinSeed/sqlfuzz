@@ -99,8 +99,8 @@ func describe() ([]fieldDescriptor, error) {
 }
 
 func fuzz(fields []fieldDescriptor) error {
-	numJobs := 10000
-	workers := 100
+	numJobs := flagsOut().num
+	workers := flagsOut().workers
 	jobs := make(chan struct{}, numJobs)
 	wg := &sync.WaitGroup{}
 	wg.Add(workers)
@@ -160,7 +160,6 @@ func genField(driver drivers.Driver, t string) interface{} {
 	case drivers.Int32:
 		return gofakeit.Number(1, 2147483647)
 	case drivers.Float:
-		// TODO add string
 		return gofakeit.Number(1, 2147483647)
 	case drivers.Blob:
 		return base64.StdEncoding.EncodeToString([]byte(randomString(12)))

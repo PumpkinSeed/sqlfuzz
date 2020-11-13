@@ -25,13 +25,6 @@ func (m MySQL) Insert(fields []string, table string) string {
 func (m MySQL) MapField(field string) Field {
 	field = strings.ToLower(field)
 	// String types
-	if strings.Contains(field, "char") {
-		l := length(field, "char")
-		if l == nil || len(l) < 1 {
-			return Field{Type: Unknown, Length: -1}
-		}
-		return Field{Type: String, Length: l[0]}
-	}
 	if strings.Contains(field, "varchar") {
 		l := length(field, "varchar")
 		if l == nil || len(l) < 1 {
@@ -39,8 +32,8 @@ func (m MySQL) MapField(field string) Field {
 		}
 		return Field{Type: String, Length: l[0]}
 	}
-	if strings.Contains(field, "binary") {
-		l := length(field, "binary")
+	if strings.Contains(field, "char") {
+		l := length(field, "char")
 		if l == nil || len(l) < 1 {
 			return Field{Type: Unknown, Length: -1}
 		}
@@ -48,6 +41,13 @@ func (m MySQL) MapField(field string) Field {
 	}
 	if strings.Contains(field, "varbinary") {
 		l := length(field, "varbinary")
+		if l == nil || len(l) < 1 {
+			return Field{Type: Unknown, Length: -1}
+		}
+		return Field{Type: String, Length: l[0]}
+	}
+	if strings.Contains(field, "binary") {
+		l := length(field, "binary")
 		if l == nil || len(l) < 1 {
 			return Field{Type: Unknown, Length: -1}
 		}
@@ -106,6 +106,12 @@ func (m MySQL) MapField(field string) Field {
 		return Field{Type: Json, Length: -1}
 	}
 
+	// Date
+	// Timestamp
+	// Time
+	// Year
+
+	// Datetime
 	if strings.Contains(field, "datetime") {
 		return Field{Type: Time, Length: -1}
 	}
@@ -115,6 +121,7 @@ func (m MySQL) MapField(field string) Field {
 		f := strings.Replace(field, "enum(", "", -1)
 		f = strings.Replace(f, ")", "", -1)
 		f = strings.Replace(f, "'", "", -1)
+		f = strings.Replace(f, " ", "", -1)
 		return Field{Type: Enum, Length: -1, Enum: strings.Split(f, ",")}
 	}
 
