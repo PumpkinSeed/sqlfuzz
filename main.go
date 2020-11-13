@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"flag"
 	"fmt"
+	"github.com/rs/xid"
 	"log"
 	"math/rand"
 	"sync"
@@ -48,21 +49,25 @@ func main() {
 
 	defer db.Close()
 
+	t := time.Now()
 	err = fuzz(fields)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
+	fmt.Println("Fuzzing taken: ", time.Since(t))
 }
 
 func parseFlags() {
 	if !f.parsed {
-		flag.StringVar(&f.driver.Username, "u", "fluidpay", "Username for the database connection")
-		flag.StringVar(&f.driver.Password, "p", "fluidpay", "Password for the database connection")
-		flag.StringVar(&f.driver.Database, "d", "fluidpay", "Database of the database connection")
-		flag.StringVar(&f.driver.Host, "h", "10.0.0.7", "Host for the database connection")
+		flag.StringVar(&f.driver.Username, "u", "", "Username for the database connection")
+		flag.StringVar(&f.driver.Password, "p", "", "Password for the database connection")
+		flag.StringVar(&f.driver.Database, "d", "", "Database of the database connection")
+		flag.StringVar(&f.driver.Host, "h", "", "Host for the database connection")
 		flag.StringVar(&f.driver.Port, "P", "3306", "Port for the database connection")
 		flag.StringVar(&f.driver.Driver, "D", "mysql", "Driver for the database connection (mysql, postgres, etc.)")
-		flag.StringVar(&f.table, "t", "transactions", "Table for fuzzing")
+		flag.StringVar(&f.table, "t", "", "Table for fuzzing")
+		flag.IntVar(&f.num, "n", 1000, "Number of rows")
+		flag.IntVar(&f.workers, "w", 20, "Number of workers")
 		flag.Parse()
 	}
 
@@ -151,6 +156,9 @@ func genField(driver drivers.Driver, t string) interface{} {
 	field := driver.MapField(t)
 	switch field.Type {
 	case drivers.String:
+		if field.Length > 19 {
+			return xid.New().String()
+		}
 		if field.Length > 0 {
 			return randomString(field.Length)
 		}
