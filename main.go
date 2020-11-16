@@ -125,7 +125,7 @@ func fuzz(fields []fieldDescriptor) error {
 func worker( jobs <-chan struct{}, fields []fieldDescriptor, wg *sync.WaitGroup) {
 	for range jobs {
 		if err := exec(fields); err != nil {
-			panic(err)
+			log.Println(err)
 		}
 	}
 
