@@ -8,6 +8,7 @@ import (
 	"github.com/volatiletech/null"
 )
 
+// FieldDescriptor represents a field described by the table in the SQL database
 type FieldDescriptor struct {
 	Field   string
 	Type    string
@@ -17,6 +18,7 @@ type FieldDescriptor struct {
 	Extra   string
 }
 
+// Describe try to get the fields of the table in the SQL database
 func Describe(db *sql.DB, f flags.Flags) ([]FieldDescriptor, error) {
 	results, err := db.Query(fmt.Sprintf("DESCRIBE %s;", f.Table))
 	if err != nil {

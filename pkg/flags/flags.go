@@ -8,6 +8,7 @@ import (
 
 var f Flags
 
+// Flags represents the CLI flags
 type Flags struct {
 	Driver drivers.Flags
 
@@ -17,15 +18,17 @@ type Flags struct {
 	Parsed  bool
 }
 
+// Get the parsed flags and parsing them if needed
 func Get() Flags {
 	if !f.Parsed {
-		parseFlags()
+		parse()
 	}
 
 	return f
 }
 
-func parseFlags() {
+// parse parsing the flags into the f variable
+func parse() {
 	if !f.Parsed {
 		flag.StringVar(&f.Driver.Username, "u", "", "Username for the database connection")
 		flag.StringVar(&f.Driver.Password, "p", "", "Password for the database connection")

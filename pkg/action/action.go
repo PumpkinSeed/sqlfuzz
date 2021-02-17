@@ -14,13 +14,14 @@ import (
 	"github.com/rs/xid"
 )
 
-func Exec(db *sql.DB, fields []descriptor.FieldDescriptor, driver drivers.Driver, table string) error {
+// Insert is inserting a random generated data into the chosen table
+func Insert(db *sql.DB, fields []descriptor.FieldDescriptor, driver drivers.Driver, table string) error {
 	var f = make([]string, 0, len(fields))
 	var values = make([]interface{}, 0, len(fields))
 	for _, field := range fields {
 		f = append(f, field.Field)
 
-		values = append(values, genField(driver, field.Type))
+		values = append(values, generateData(driver, field.Type))
 	}
 	driver.Insert(f, table)
 	ins, err := db.Prepare(driver.Insert(f, table))
@@ -32,7 +33,8 @@ func Exec(db *sql.DB, fields []descriptor.FieldDescriptor, driver drivers.Driver
 	return err
 }
 
-func genField(driver drivers.Driver, t string) interface{} {
+// generateData generates random data based on the field
+func generateData(driver drivers.Driver, t string) interface{} {
 	field := driver.MapField(t)
 	switch field.Type {
 	case drivers.String:
@@ -77,7 +79,7 @@ func genField(driver drivers.Driver, t string) interface{} {
 	return nil
 }
 
-
+// randomString generates a length size random string
 func randomString(length int16) string {
 	var charset = "abcdefghijklmnopqrstuvwxyz" +
 		"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
