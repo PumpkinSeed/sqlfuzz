@@ -1,34 +1,40 @@
 package main
 
 import (
-	"github.com/PumpkinSeed/sqlfuzz/drivers"
-	"github.com/brianvoe/gofakeit/v5"
-	"log"
 	"testing"
+
+	"github.com/PumpkinSeed/sqlfuzz/drivers"
+	"github.com/PumpkinSeed/sqlfuzz/pkg/connector"
+	"github.com/PumpkinSeed/sqlfuzz/pkg/descriptor"
+	"github.com/PumpkinSeed/sqlfuzz/pkg/flags"
+	"github.com/PumpkinSeed/sqlfuzz/pkg/fuzzer"
+	"github.com/brianvoe/gofakeit/v5"
 )
 
 func TestFuzz(t *testing.T) {
-	f.driver = drivers.Flags{
-		Username: "fluidpay",
-		Password: "fluidpay",
-		Database: "fluidpay",
-		Host: "10.0.0.12",
+	f := flags.Flags{}
+	f.Driver = drivers.Flags{
+		Username: "mysql",
+		Password: "mysql",
+		Database: "mysql",
+		Host: "127.0.0.1",
 		Port: "3306",
 		Driver:"mysql",
 	}
-	f.table = "Persons"
-	f.parsed = true
+	f.Table = "Persons"
+	f.Parsed = true
 
 	gofakeit.Seed(0)
-	fields, err := describe()
+	db := connector.Connection(drivers.New(flags.Get().Driver))
+	fields, err := descriptor.Describe(db, f)
 	if err != nil {
-		log.Fatal(err.Error())
+		t.Fatal(err)
 	}
 
 	defer db.Close()
 
-	err = fuzz(fields)
+	err = fuzzer.Run(db, fields, f)
 	if err != nil {
-		log.Fatal(err.Error())
+		t.Fatal(err)
 	}
 }
