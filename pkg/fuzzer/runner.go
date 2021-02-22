@@ -1,4 +1,4 @@
-package run
+package fuzzer
 
 import (
 	"database/sql"

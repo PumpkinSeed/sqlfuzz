@@ -7,7 +7,7 @@ import (
 	"github.com/PumpkinSeed/sqlfuzz/pkg/connector"
 	"github.com/PumpkinSeed/sqlfuzz/pkg/descriptor"
 	"github.com/PumpkinSeed/sqlfuzz/pkg/flags"
-	"github.com/PumpkinSeed/sqlfuzz/pkg/runner"
+	"github.com/PumpkinSeed/sqlfuzz/pkg/fuzzer"
 	"github.com/brianvoe/gofakeit/v5"
 )
 
@@ -33,7 +33,7 @@ func TestFuzz(t *testing.T) {
 
 	defer db.Close()
 
-	err = run.Run(db, fields, f)
+	err = fuzzer.Run(db, fields, f)
 	if err != nil {
 		t.Fatal(err)
 	}

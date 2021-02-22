@@ -9,7 +9,7 @@ import (
 	"github.com/PumpkinSeed/sqlfuzz/pkg/connector"
 	"github.com/PumpkinSeed/sqlfuzz/pkg/descriptor"
 	"github.com/PumpkinSeed/sqlfuzz/pkg/flags"
-	"github.com/PumpkinSeed/sqlfuzz/pkg/runner"
+	"github.com/PumpkinSeed/sqlfuzz/pkg/fuzzer"
 	"github.com/brianvoe/gofakeit/v5"
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -26,7 +26,7 @@ func main() {
 	defer db.Close()
 
 	t := time.Now()
-	err = run.Run(db, fields, f)
+	err = fuzzer.Run(db, fields, f)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
