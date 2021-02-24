@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"time"
 
@@ -18,17 +17,28 @@ func main() {
 	f := flags.Get()
 	gofakeit.Seed(0)
 	db := connector.Connection(drivers.New(flags.Get().Driver))
-	fields, err := descriptor.Describe(db, f)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-
 	defer db.Close()
 
-	t := time.Now()
-	err = fuzzer.Run(db, fields, f)
-	if err != nil {
-		log.Fatal(err.Error())
+	var tables []string
+	if f.Table == "" {
+		var err error
+		tables, err = descriptor.ShowTables(db)
+		if err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		tables = []string{f.Table}
 	}
-	fmt.Println("Fuzzing taken: ", time.Since(t))
+	for _, table := range tables {
+		fields, err := descriptor.Describe(db, table)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+
+		t := time.Now()
+		if err := fuzzer.Run(db, fields, f); err != nil {
+			log.Fatal(err.Error())
+		}
+		log.Printf("Fuzzing %s table taken: %v \n", table, time.Since(t))
+	}
 }
