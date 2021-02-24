@@ -106,13 +106,17 @@ func (m MySQL) MapField(field string) Field {
 		return Field{Type: Json, Length: -1}
 	}
 
+	// Year
+	if strings.HasPrefix(field, "year") {
+		return Field{Type: Year, Length: 4}
+	}
+
+	// Time
 	// Date
 	// Timestamp
-	// Time
-	// Year
-
 	// Datetime
-	if strings.HasPrefix(field, "datetime") {
+	if strings.HasPrefix(field, "datetime") || strings.HasPrefix(field, "date") ||
+		strings.HasPrefix(field, "timestamp") || strings.HasPrefix(field, "time") {
 		return Field{Type: Time, Length: -1}
 	}
 

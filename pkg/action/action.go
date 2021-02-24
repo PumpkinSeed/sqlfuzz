@@ -72,6 +72,8 @@ func generateData(driver drivers.Driver, t string) interface{} {
 		)
 	case drivers.Time:
 		return gofakeit.Date()
+	case drivers.Year:
+		return gofakeit.Number(1901, 2155)
 	case drivers.Unknown:
 		log.Fatalf("Unknown field type: %s", t)
 	}

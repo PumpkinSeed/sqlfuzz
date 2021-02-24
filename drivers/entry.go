@@ -15,6 +15,7 @@ const (
 	Bool
 	Json
 	Time
+	Year
 	Unknown
 )
 
