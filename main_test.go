@@ -26,7 +26,7 @@ func TestFuzz(t *testing.T) {
 
 	gofakeit.Seed(0)
 	db := connector.Connection(drivers.New(flags.Get().Driver))
-	fields, err := descriptor.Describe(db, f)
+	fields, err := descriptor.Describe(db, f.Table)
 	if err != nil {
 		t.Fatal(err)
 	}
