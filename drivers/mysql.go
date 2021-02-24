@@ -25,28 +25,28 @@ func (m MySQL) Insert(fields []string, table string) string {
 func (m MySQL) MapField(field string) Field {
 	field = strings.ToLower(field)
 	// String types
-	if strings.Contains(field, "varchar") {
+	if strings.HasPrefix(field, "varchar") {
 		l := length(field, "varchar")
 		if l == nil || len(l) < 1 {
 			return Field{Type: Unknown, Length: -1}
 		}
 		return Field{Type: String, Length: l[0]}
 	}
-	if strings.Contains(field, "char") {
+	if strings.HasPrefix(field, "char") {
 		l := length(field, "char")
 		if l == nil || len(l) < 1 {
 			return Field{Type: Unknown, Length: -1}
 		}
 		return Field{Type: String, Length: l[0]}
 	}
-	if strings.Contains(field, "varbinary") {
+	if strings.HasPrefix(field, "varbinary") {
 		l := length(field, "varbinary")
 		if l == nil || len(l) < 1 {
 			return Field{Type: Unknown, Length: -1}
 		}
 		return Field{Type: String, Length: l[0]}
 	}
-	if strings.Contains(field, "binary") {
+	if strings.HasPrefix(field, "binary") {
 		l := length(field, "binary")
 		if l == nil || len(l) < 1 {
 			return Field{Type: Unknown, Length: -1}
@@ -55,35 +55,35 @@ func (m MySQL) MapField(field string) Field {
 	}
 
 	// Numeric types
-	if strings.Contains(field, "tinyint") {
+	if strings.HasPrefix(field, "tinyint") {
 		return Field{Type: Bool, Length: -1}
 	}
-	if strings.Contains(field, "smallint") {
+	if strings.HasPrefix(field, "smallint") {
 		return Field{Type: Int16, Length: -1}
 	}
-	if strings.Contains(field, "mediumint") {
+	if strings.HasPrefix(field, "mediumint") {
 		return Field{Type: Int16, Length: -1}
 	}
-	if strings.Contains(field, "int") || strings.Contains(field, "bigint"){
+	if strings.HasPrefix(field, "int") || strings.HasPrefix(field, "bigint"){
 		return Field{Type: Int32, Length: -1}
 	}
 
 	// Float types
-	if strings.Contains(field, "decimal") {
+	if strings.HasPrefix(field, "decimal") {
 		l := length(field, "decimal")
 		if l == nil || len(l) < 2 || l[0] < l[1] {
 			return Field{Type: Unknown, Length: -1}
 		}
 		return Field{Type: Float, Length: l[0] - l[1]}
 	}
-	if strings.Contains(field, "float") {
+	if strings.HasPrefix(field, "float") {
 		l := length(field, "float")
 		if l == nil || len(l) < 2 || l[0] < l[1] {
 			return Field{Type: Unknown, Length: -1}
 		}
 		return Field{Type: Float, Length: l[0] - l[1]}
 	}
-	if strings.Contains(field, "double") {
+	if strings.HasPrefix(field, "double") {
 		l := length(field, "double")
 		if l == nil || len(l) < 2 || l[0] < l[1] {
 			return Field{Type: Unknown, Length: -1}
@@ -92,17 +92,17 @@ func (m MySQL) MapField(field string) Field {
 	}
 
 	// Blob
-	if strings.Contains(field, "blob") {
+	if strings.HasPrefix(field, "blob") {
 		return Field{Type: Blob, Length: -1}
 	}
 
 	// Text
-	if strings.Contains(field, "text") {
+	if strings.HasPrefix(field, "text") {
 		return Field{Type: Text, Length: -1}
 	}
 
 	// Json
-	if strings.Contains(field, "json") {
+	if strings.HasPrefix(field, "json") {
 		return Field{Type: Json, Length: -1}
 	}
 
@@ -112,12 +112,12 @@ func (m MySQL) MapField(field string) Field {
 	// Year
 
 	// Datetime
-	if strings.Contains(field, "datetime") {
+	if strings.HasPrefix(field, "datetime") {
 		return Field{Type: Time, Length: -1}
 	}
 
 	// Enum
-	if strings.Contains(field, "enum") {
+	if strings.HasPrefix(field, "enum") {
 		f := strings.Replace(field, "enum(", "", -1)
 		f = strings.Replace(f, ")", "", -1)
 		f = strings.Replace(f, "'", "", -1)
