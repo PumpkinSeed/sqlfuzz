@@ -30,6 +30,7 @@ func main() {
 		tables = []string{f.Table}
 	}
 	for _, table := range tables {
+		f.Table = table
 		fields, err := descriptor.Describe(db, table)
 		if err != nil {
 			log.Fatal(err.Error())
