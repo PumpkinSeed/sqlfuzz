@@ -18,8 +18,8 @@ func (m MySQL) Driver() string {
 }
 
 func (m MySQL) Insert(fields []string, table string) string {
-	var template = "INSERT INTO %s(%s) VALUES(%s)"
-	return fmt.Sprintf(template, table, strings.Join(fields, ", "), questionMarks(len(fields)))
+	var template = "INSERT INTO %s(`%s`) VALUES(%s)"
+	return fmt.Sprintf(template, table, strings.Join(fields, "`,`"), questionMarks(len(fields)))
 }
 
 func (m MySQL) MapField(field string) Field {
@@ -134,5 +134,5 @@ func questionMarks(n int) string {
 		q = append(q, "?")
 	}
 
-	return strings.Join(q, ", ")
+	return strings.Join(q, ",")
 }

@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/PumpkinSeed/sqlfuzz/pkg/flags"
 	"github.com/volatiletech/null"
 )
 
@@ -19,8 +18,8 @@ type FieldDescriptor struct {
 }
 
 // Describe try to get the fields of the table in the SQL database
-func Describe(db *sql.DB, f flags.Flags) ([]FieldDescriptor, error) {
-	results, err := db.Query(fmt.Sprintf("DESCRIBE %s;", f.Table))
+func Describe(db *sql.DB, table string) ([]FieldDescriptor, error) {
+	results, err := db.Query(fmt.Sprintf("DESCRIBE %s;", table))
 	if err != nil {
 		return nil, err
 	}

@@ -23,10 +23,12 @@ func Insert(db *sql.DB, fields []descriptor.FieldDescriptor, driver drivers.Driv
 
 		values = append(values, generateData(driver, field.Type))
 	}
-	driver.Insert(f, table)
-	ins, err := db.Prepare(driver.Insert(f, table))
+	query := driver.Insert(f, table)
+
+	ins, err := db.Prepare(query)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("invalid preparing query: %s\n", query)
+		return fmt.Errorf("error preparing query: %w", err)
 	}
 
 	_, err = ins.Exec(values...)
@@ -73,7 +75,8 @@ func generateData(driver drivers.Driver, t string) interface{} {
 	case drivers.Time:
 		return gofakeit.Date()
 	case drivers.Unknown:
-		log.Fatalf("Unknown field type: %s", t)
+		log.Printf("unknown field type: %s\n", t)
+		return nil
 	}
 
 	return nil
