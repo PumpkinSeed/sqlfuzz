@@ -4,6 +4,10 @@
 
 Load random data into SQL tables for testing purposes. The tool can get the layout of the SQL table and fill it up with random data. 
 
+#### Installation
+
+
+
 #### Usage
 
 ```
