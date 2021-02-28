@@ -4,21 +4,47 @@
 
 Load random data into SQL tables for testing purposes. The tool can get the layout of the SQL table and fill it up with random data. 
 
-#### Installation
+### Installation
 
-
-
-#### Usage
+#### MacOS
 
 ```
-go install github.com/PumpkinSeed/sqlfuzz
+wget https://github.com/PumpkinSeed/sqlfuzz/releases/download/{RELEASE}/sqlfuzz_darwin_amd64 -O /usr/local/bin/sqlfuzz
+chmod +x /usr/local/bin/sqlfuzz
 ```
+
+#### Linux
+
+```
+# amd64 build
+wget https://github.com/PumpkinSeed/sqlfuzz/releases/download/{RELEASE}/sqlfuzz_linux_amd64 -O /usr/local/bin/sqlfuzz
+chmod +x /usr/local/bin/sqlfuzz
+
+# arm64 build
+wget https://github.com/PumpkinSeed/sqlfuzz/releases/download/{RELEASE}/sqlfuzz_linux_arm64 -O /usr/local/bin/sqlfuzz
+chmod +x /usr/local/bin/sqlfuzz
+```
+
+#### Windows
+
+You can download the Windows build [here](https://github.com/PumpkinSeed/sqlfuzz/releases/download/v0.3.0/sqlfuzz_windows_amd64.exe)
+
+#### Build from source
+
+```
+wget https://github.com/PumpkinSeed/sqlfuzz/archive/{RELEASE}.zip
+# unzip
+# cd into dir
+go install main.go
+```
+
+### Usage
 
 ```
 sqlfuzz -u username -p password -d database -h 127.0.0.1 -t table -n 100000 -w 100
 ```
 
-#### Flags
+### Flags
 
 - `u`: User for database connection
 - `p`: Password for database connection
