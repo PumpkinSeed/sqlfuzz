@@ -17,9 +17,9 @@ func TestFuzz(t *testing.T) {
 		Username: "mysql",
 		Password: "mysql",
 		Database: "mysql",
-		Host: "127.0.0.1",
-		Port: "3306",
-		Driver:"mysql",
+		Host:     "127.0.0.1",
+		Port:     "3306",
+		Driver:   "mysql",
 	}
 	f.Table = "Persons"
 	f.Parsed = true

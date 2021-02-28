@@ -7,95 +7,95 @@ import (
 
 func TestMapField(t *testing.T) {
 	var scenarios = []struct {
-		input string
+		input  string
 		output Field
 	}{
 		{
-			input:"varchar(12)",
+			input:  "varchar(12)",
 			output: Field{Type: String, Length: 12},
 		},
 		{
-			input:"char(100)",
+			input:  "char(100)",
 			output: Field{Type: String, Length: 100},
 		},
 		{
-			input:"varbinary(100)",
+			input:  "varbinary(100)",
 			output: Field{Type: String, Length: 100},
 		},
 		{
-			input:"binary(100)",
+			input:  "binary(100)",
 			output: Field{Type: String, Length: 100},
 		},
 		{
-			input:"tinyint",
+			input:  "tinyint",
 			output: Field{Type: Bool, Length: -1},
 		},
 		{
-			input:"smallint",
+			input:  "smallint",
 			output: Field{Type: Int16, Length: -1},
 		},
 		{
-			input:"mediumint",
+			input:  "mediumint",
 			output: Field{Type: Int16, Length: -1},
 		},
 		{
-			input:"int",
+			input:  "int",
 			output: Field{Type: Int32, Length: -1},
 		},
 		{
-			input:"bigint",
+			input:  "bigint",
 			output: Field{Type: Int32, Length: -1},
 		},
 		{
-			input:"decimal(12, 4)",
+			input:  "decimal(12, 4)",
 			output: Field{Type: Float, Length: 8},
 		},
 		{
-			input:"float(12, 5)",
+			input:  "float(12, 5)",
 			output: Field{Type: Float, Length: 7},
 		},
 		{
-			input:"double(20,5)",
+			input:  "double(20,5)",
 			output: Field{Type: Float, Length: 15},
 		},
 		{
-			input:"blob",
+			input:  "blob",
 			output: Field{Type: Blob, Length: -1},
 		},
 		{
-			input:"tinyblob",
+			input:  "tinyblob",
 			output: Field{Type: Blob, Length: -1},
 		},
 		{
-			input:"mediumblob",
+			input:  "mediumblob",
 			output: Field{Type: Blob, Length: -1},
 		},
 		{
-			input:"longblob",
+			input:  "longblob",
 			output: Field{Type: Blob, Length: -1},
 		},
 		{
-			input:"text",
+			input:  "text",
 			output: Field{Type: Text, Length: -1},
 		},
 		{
-			input:"tinytext",
+			input:  "tinytext",
 			output: Field{Type: Text, Length: -1},
 		},
 		{
-			input:"mediumtext",
+			input:  "mediumtext",
 			output: Field{Type: Text, Length: -1},
 		},
 		{
-			input:"longtext",
+			input:  "longtext",
 			output: Field{Type: Text, Length: -1},
 		},
 		{
-			input:"json",
+			input:  "json",
 			output: Field{Type: Json, Length: -1},
 		},
 		{
-			input:"enum(test, this, data)",
+			input:  "enum(test, this, data)",
 			output: Field{Type: Enum, Length: -1, Enum: []string{"test", "this", "data"}},
 		},
 	}

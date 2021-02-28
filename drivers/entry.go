@@ -19,21 +19,24 @@ const (
 	Unknown
 )
 
+// Flags needed by the driver
 type Flags struct {
 	Username string
 	Password string
 	Database string
-	Host string
-	Port string
-	Driver string
+	Host     string
+	Port     string
+	Driver   string
 }
 
+// Field is the possible field definition
 type Field struct {
-	Type Type
+	Type   Type
 	Length int16
-	Enum []string
+	Enum   []string
 }
 
+// Driver is the interface should satisfied by a certain driver
 type Driver interface {
 	Connection() string
 	Driver() string
@@ -41,10 +44,11 @@ type Driver interface {
 	MapField(string) Field
 }
 
+// New creates a new driver instance based on the flags
 func New(f Flags) Driver {
 	switch f.Driver {
 	case "mysql":
-		return MySQL{f:f}
+		return MySQL{f: f}
 	default:
 		log.Fatal("Driver not implemented")
 		return nil
