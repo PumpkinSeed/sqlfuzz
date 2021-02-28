@@ -5,23 +5,28 @@ import (
 	"strings"
 )
 
+// MySQL implementation of the Driver
 type MySQL struct {
 	f Flags
 }
 
+// Connection returns the specific connection string
 func (m MySQL) Connection() string {
 	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", m.f.Username, m.f.Password, m.f.Host, m.f.Port, m.f.Database)
 }
 
+// Driver returns the name of the driver
 func (m MySQL) Driver() string {
 	return m.f.Driver
 }
 
+// Insert inserts the data into
 func (m MySQL) Insert(fields []string, table string) string {
 	var template = "INSERT INTO %s(`%s`) VALUES(%s)"
 	return fmt.Sprintf(template, table, strings.Join(fields, "`,`"), questionMarks(len(fields)))
 }
 
+// MapField returns the actual fields
 func (m MySQL) MapField(field string) Field {
 	field = strings.ToLower(field)
 	// String types
@@ -64,7 +69,7 @@ func (m MySQL) MapField(field string) Field {
 	if strings.HasPrefix(field, "mediumint") {
 		return Field{Type: Int16, Length: -1}
 	}
-	if strings.HasPrefix(field, "int") || strings.HasPrefix(field, "bigint"){
+	if strings.HasPrefix(field, "int") || strings.HasPrefix(field, "bigint") {
 		return Field{Type: Int32, Length: -1}
 	}
 

@@ -62,3 +62,5 @@ sqlfuzz -u username -p password -d database -h 127.0.0.1 -t table -n 100000 -w 1
 - `w`: Concurrent workers to work on fuzzing
 
 ### Package usage
+
+TODO: Write package 
