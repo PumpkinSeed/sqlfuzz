@@ -4,6 +4,11 @@
 
 Load random data into SQL tables for testing purposes. The tool can get the layout of the SQL table and fill it up with random data. 
 
+- [Installation](#installation)
+- [Usage](#usage)
+- [Flags](#flags)
+- [Package usage](#package-usage)
+
 ### Installation
 
 #### MacOS
@@ -44,7 +49,7 @@ go install main.go
 sqlfuzz -u username -p password -d database -h 127.0.0.1 -t table -n 100000 -w 100
 ```
 
-### Flags
+#### Flags
 
 - `u`: User for database connection
 - `p`: Password for database connection
@@ -55,3 +60,5 @@ sqlfuzz -u username -p password -d database -h 127.0.0.1 -t table -n 100000 -w 1
 - `t`: Table for fuzzing
 - `n`: Number of rows to fuzz
 - `w`: Concurrent workers to work on fuzzing
+
+### Package usage
