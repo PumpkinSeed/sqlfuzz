@@ -1,5 +1,7 @@
 ## SQLfuzz
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/PumpkinSeed/sqlfuzz)](https://goreportcard.com/report/github.com/PumpkinSeed/sqlfuzz) [![GoDoc](https://godoc.org/github.com/PumpkinSeed/sqlfuzz?status.svg)](https://godoc.org/github.com/PumpkinSeed/sqlfuzz) [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) [![made-with-Go](https://img.shields.io/badge/Made%20with-Go-1f425f.svg)](http://golang.org) ![sqlfuzz test workflow](https://github.com/PumpkinSeed/sqlfuzz/actions/workflows/test.yml/badge.svg)
+
 Load random data into SQL tables for testing purposes. The tool can get the layout of the SQL table and fill it up with random data. 
 
 #### Usage
