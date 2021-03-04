@@ -16,7 +16,8 @@ import (
 func main() {
 	f := flags.Get()
 	gofakeit.Seed(0)
-	db := connector.Connection(drivers.New(flags.Get().Driver))
+	driver := drivers.New(flags.Get().Driver)
+	db := connector.Connection(driver)
 	defer db.Close()
 
 	var tables []string
@@ -31,11 +32,15 @@ func main() {
 	}
 	for _, table := range tables {
 		f.Table = table
-		fields, err := descriptor.Describe(db, table)
+		describeQuery := driver.Describe(f.Table)
+		results, err := db.Query(describeQuery)
 		if err != nil {
 			log.Fatal(err.Error())
 		}
-
+		fields, err := driver.ParseFields(results)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
 		t := time.Now()
 		if err := fuzzer.Run(db, fields, f); err != nil {
 			log.Fatal(err.Error())

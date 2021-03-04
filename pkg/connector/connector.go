@@ -2,9 +2,9 @@ package connector
 
 import (
 	"database/sql"
-	"log"
-
 	"github.com/PumpkinSeed/sqlfuzz/drivers"
+	_ "github.com/lib/pq"
+	"log"
 )
 
 var (

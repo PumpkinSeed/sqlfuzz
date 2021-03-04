@@ -2,6 +2,7 @@ package descriptor
 
 import (
 	"database/sql"
+	_ "github.com/lib/pq"
 )
 
 // ShowTables queries the available tables of the database

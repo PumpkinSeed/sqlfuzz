@@ -1,6 +1,7 @@
 package drivers
 
 import (
+	"database/sql"
 	"fmt"
 	"strings"
 )
@@ -27,8 +28,8 @@ func (m MySQL) Insert(fields []string, table string) string {
 }
 
 // MapField returns the actual fields
-func (m MySQL) MapField(field string) Field {
-	field = strings.ToLower(field)
+func (m MySQL) MapField(descriptor FieldDescriptor) Field {
+	field := strings.ToLower(descriptor.Field)
 	// String types
 	if strings.HasPrefix(field, "varchar") {
 		l := length(field, "varchar")
@@ -137,6 +138,23 @@ func (m MySQL) MapField(field string) Field {
 	return Field{Type: Unknown, Length: -1}
 }
 
+func (MySQL) Describe(table string) string {
+	return fmt.Sprintf("DESCRIBE %s;", table)
+}
+
+func (m MySQL) ParseFields(results *sql.Rows) ([]FieldDescriptor, error) {
+	var fields []FieldDescriptor
+	for results.Next() {
+		var d FieldDescriptor
+		err := results.Scan(&d.Field, &d.Type, &d.Null, &d.Key, &d.Default, &d.Extra)
+		if err != nil {
+			return nil, err
+		}
+
+		fields = append(fields, d)
+	}
+	return fields, nil
+}
 func questionMarks(n int) string {
 	var q []string
 	for i := 0; i < n; i++ {

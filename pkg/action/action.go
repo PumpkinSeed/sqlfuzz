@@ -4,24 +4,26 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"fmt"
+	_ "github.com/lib/pq"
 	"log"
 	"math/rand"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/PumpkinSeed/sqlfuzz/drivers"
-	"github.com/PumpkinSeed/sqlfuzz/pkg/descriptor"
 	"github.com/brianvoe/gofakeit/v5"
 	"github.com/rs/xid"
 )
 
 // Insert is inserting a random generated data into the chosen table
-func Insert(db *sql.DB, fields []descriptor.FieldDescriptor, driver drivers.Driver, table string) error {
+func Insert(db *sql.DB, fields []drivers.FieldDescriptor, driver drivers.Driver, table string) error {
 	var f = make([]string, 0, len(fields))
 	var values = make([]interface{}, 0, len(fields))
 	for _, field := range fields {
 		f = append(f, field.Field)
 
-		values = append(values, generateData(driver, field.Type))
+		values = append(values, generateData(driver, field))
 	}
 	query := driver.Insert(f, table)
 
@@ -36,8 +38,8 @@ func Insert(db *sql.DB, fields []descriptor.FieldDescriptor, driver drivers.Driv
 }
 
 // generateData generates random data based on the field
-func generateData(driver drivers.Driver, t string) interface{} {
-	field := driver.MapField(t)
+func generateData(driver drivers.Driver, fieldDescriptor drivers.FieldDescriptor) interface{} {
+	field := driver.MapField(fieldDescriptor)
 	switch field.Type {
 	case drivers.String:
 		if field.Length > 19 {
@@ -76,8 +78,29 @@ func generateData(driver drivers.Driver, t string) interface{} {
 		return gofakeit.Date()
 	case drivers.Year:
 		return gofakeit.Number(1901, 2155)
+	case drivers.XML:
+		xml, err := gofakeit.XML(&gofakeit.XMLOptions{
+			Type:          "single",
+			RootElement:   "xml",
+			RecordElement: "record",
+			RowCount:      2,
+			Indent:        true,
+			Fields: []gofakeit.Field{
+				{Name: "first_name", Function: "firstname"},
+				{Name: "last_name", Function: "lastname"},
+				{Name: "password", Function: "password", Params: map[string][]string{"special": {"false"}}},
+			},
+		})
+		if err == nil {
+			return string(xml)
+		}
+		return nil
+	case drivers.UUID:
+		return gofakeit.UUID()
+	case drivers.BinaryString:
+		return binaryString(int(field.Length))
 	case drivers.Unknown:
-		log.Printf("unknown field type: %s\n", t)
+		log.Printf("unknown field type: %s\n", fieldDescriptor)
 		return nil
 	}
 
@@ -98,4 +121,16 @@ func randomString(length int16) string {
 	}
 
 	return string(b)
+}
+
+func binaryString(length int) string {
+	var str []string
+	for i := 0; i < length; i++ {
+		num := 0
+		if gofakeit.Bool() {
+			num = 1
+		}
+		str = append(str, strconv.Itoa(num))
+	}
+	return strings.Join(str, "")
 }

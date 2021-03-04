@@ -1,3 +1,6 @@
+GOFILES := $(shell find . -name "*.go" -type f ! -path "./vendor/*")
+GOFMT ?= gofmt -s
+
 .PHONY: all
 all: slqfuzz_darwin_amd64 slqfuzz_windows_amd64 slqfuzz_linux_amd64 slqfuzz_linux_arm64
 
@@ -19,3 +22,6 @@ slqfuzz_linux_arm64:
 
 clean:
 	rm -rf sqlfuzz*
+
+fmt:
+	@$(GOFMT) -w ${GOFILES}
