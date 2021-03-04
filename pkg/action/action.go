@@ -21,8 +21,11 @@ func Insert(db *sql.DB, fields []drivers.FieldDescriptor, driver drivers.Driver,
 	var f = make([]string, 0, len(fields))
 	var values = make([]interface{}, 0, len(fields))
 	for _, field := range fields {
+		// Has default value. No need to insert this field manually.
+		if field.HasDefaultValue {
+			continue
+		}
 		f = append(f, field.Field)
-
 		values = append(values, generateData(driver, field))
 	}
 	query := driver.Insert(f, table)

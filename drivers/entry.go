@@ -45,16 +45,16 @@ type Field struct {
 
 //FieldDescriptor represents a field described by the table in the SQL database
 type FieldDescriptor struct {
-	Field         string
-	Type          string
-	Null          string
-	Key           string
-	Length        null.Int
-	Default       null.String
-	Extra         string
-	Precision     null.Int
-	Scale         null.Int
-	AutoIncrement bool
+	Field           string
+	Type            string
+	Null            string
+	Key             string
+	Length          null.Int
+	Default         null.String
+	Extra           string
+	Precision       null.Int
+	Scale           null.Int
+	HasDefaultValue bool
 }
 
 // Driver is the interface should satisfied by a certain driver

@@ -30,7 +30,6 @@ func (p Postgres) Insert(fields []string, table string) string {
 
 func (p Postgres) MapField(descriptor FieldDescriptor) Field {
 	field := Field{Type: Unknown, Length: -1}
-	// Has default values such as auto increments. No need to insert them specifically.
 	switch descriptor.Type {
 	case "bigint":
 		return Field{Type: Int32, Length: -1}
@@ -80,7 +79,7 @@ func (p Postgres) ParseFields(rows *sql.Rows) ([]FieldDescriptor, error) {
 		var field FieldDescriptor
 		err := rows.Scan(&field.Field, &field.Type, &field.Length, &field.Default, &field.Null, &field.Precision, &field.Scale)
 		if field.Default.Valid && len(field.Default.String) > 0 {
-			field.AutoIncrement = true
+			field.HasDefaultValue = true
 		}
 		if err != nil {
 			return nil, err
