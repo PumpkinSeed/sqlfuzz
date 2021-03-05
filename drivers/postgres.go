@@ -63,12 +63,7 @@ func (p Postgres) MapField(descriptor FieldDescriptor) Field {
 	return field
 }
 
-/*
-ARRAY
-select * from INFORMATION_SCHEMA.COLUMNS where table_name = 'pg_data_types' AND data_type = 'ARRAY';
-*/
 func (p Postgres) Describe(table string) string {
-	//return fmt.Sprintf("SELECT col_attr.attname as 'ColumnName', pg_catalog.format_type(col_attr.atttypid, col_attr.atttypmod) as 'DataType'	FROM pg_catalog.pg_attribute col_attr WHERE col_attr.attnum > 0 AND NOT col_attr.attisdropped AND col_attr.attrelid = ( SELECT cls.oid FROM pg_catalog.pg_class cls LEFT JOIN pg_catalog.pg_namespace ns ON ns.oid = cls.relnamespace WHERE cls.relname = '%s');", table)
 	return fmt.Sprintf("select column_name, data_type, character_maximum_length, column_default, is_nullable,numeric_precision,numeric_scale from INFORMATION_SCHEMA.COLUMNS where table_name = '%s'", table)
 
 }
@@ -95,15 +90,4 @@ func pgValPlaceholder(fieldLen int) string {
 		q = append(q, fmt.Sprintf("$%d", i))
 	}
 	return strings.Join(q, ",")
-}
-
-func DescribeTable(db *sql.DB, table string) (sql.Result, error) {
-	describeTableQuery := fmt.Sprintf("\\d+ %s;", table)
-	//describeTableQuery := fmt.Sprintf("Select * from %s;", table)
-
-	results, err := db.Exec(describeTableQuery)
-	if err != nil {
-		return nil, err
-	}
-	return results, nil
 }
