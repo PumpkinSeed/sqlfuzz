@@ -6,9 +6,31 @@ import (
 	"strings"
 )
 
+const (
+	MysSQLDescribeTableQuery = "SHOW TABLES;"
+)
+
 // MySQL implementation of the Driver
 type MySQL struct {
 	f Flags
+}
+
+func (m MySQL) ShowTables(db *sql.DB) ([]string, error) {
+	results, err := db.Query(MysSQLDescribeTableQuery)
+	if err != nil {
+		return nil, err
+	}
+	defer results.Close()
+	var tables []string
+	for results.Next() {
+		var table string
+		if err := results.Scan(&table); err != nil {
+			return nil, err
+		}
+		tables = append(tables, table)
+	}
+
+	return tables, nil
 }
 
 // Connection returns the specific connection string
@@ -138,11 +160,16 @@ func (m MySQL) MapField(descriptor FieldDescriptor) Field {
 	return Field{Type: Unknown, Length: -1}
 }
 
-func (MySQL) Describe(table string) string {
-	return fmt.Sprintf("DESCRIBE %s;", table)
+func (MySQL) DescribeFields(table string, db *sql.DB) ([]FieldDescriptor, error) {
+	describeQuery := fmt.Sprintf("DESCRIBE %s;", table)
+	results, err := db.Query(describeQuery)
+	if err != nil {
+		return nil, err
+	}
+	return parseMySQLFields(results)
 }
 
-func (m MySQL) ParseFields(results *sql.Rows) ([]FieldDescriptor, error) {
+func parseMySQLFields(results *sql.Rows) ([]FieldDescriptor, error) {
 	var fields []FieldDescriptor
 	for results.Next() {
 		var d FieldDescriptor

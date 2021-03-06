@@ -7,15 +7,34 @@ import (
 	"strings"
 )
 
+const (
+	PSQLDescribeTemplate   = "select column_name, data_type, character_maximum_length, column_default, is_nullable,numeric_precision,numeric_scale from INFORMATION_SCHEMA.COLUMNS where table_name = '%s'"
+	PSQLConnectionTemplate = "host=%s port=%s user=%s password=%s dbname=%s sslmode=disable"
+	PSQLInsertTemplate     = "INSERT INTO %s(\"%s\") VALUES(%s)"
+	PSQLShowTablesQuery    = "SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema';"
+)
+
 type Postgres struct {
 	f Flags
 }
 
+func (p Postgres) ShowTables(db *sql.DB) ([]string, error) {
+	rows, err := db.Query(PSQLShowTablesQuery)
+	if err != nil {
+		return nil, err
+	}
+	var tables []string
+	for rows.Next() {
+		var table string
+		rows.Scan(&table)
+		tables = append(tables, table)
+	}
+	return tables, nil
+}
+
 func (p Postgres) Connection() string {
-	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s "+
-		"password=%s dbname=%s sslmode=disable",
+	return fmt.Sprintf(PSQLConnectionTemplate,
 		p.f.Host, p.f.Port, p.f.Username, p.f.Password, p.f.Database)
-	return psqlInfo
 }
 
 func (p Postgres) Driver() string {
@@ -23,9 +42,7 @@ func (p Postgres) Driver() string {
 }
 
 func (p Postgres) Insert(fields []string, table string) string {
-	// Syntax : VALUES($1, $2, $3)
-	var template = "INSERT INTO %s(\"%s\") VALUES(%s)"
-	return fmt.Sprintf(template, table, strings.Join(fields, "\",\""), pgValPlaceholder(len(fields)))
+	return fmt.Sprintf(PSQLInsertTemplate, table, strings.Join(fields, "\",\""), pgValPlaceholder(len(fields)))
 }
 
 func (p Postgres) MapField(descriptor FieldDescriptor) Field {
@@ -63,12 +80,16 @@ func (p Postgres) MapField(descriptor FieldDescriptor) Field {
 	return field
 }
 
-func (p Postgres) Describe(table string) string {
-	return fmt.Sprintf("select column_name, data_type, character_maximum_length, column_default, is_nullable,numeric_precision,numeric_scale from INFORMATION_SCHEMA.COLUMNS where table_name = '%s'", table)
-
+func (p Postgres) DescribeFields(table string, db *sql.DB) ([]FieldDescriptor, error) {
+	describeQuery := fmt.Sprintf(PSQLDescribeTemplate, table)
+	results, err := db.Query(describeQuery)
+	if err != nil {
+		return nil, err
+	}
+	return parsePostgresFields(results)
 }
 
-func (p Postgres) ParseFields(rows *sql.Rows) ([]FieldDescriptor, error) {
+func parsePostgresFields(rows *sql.Rows) ([]FieldDescriptor, error) {
 	var tableFields []FieldDescriptor
 	for rows.Next() {
 		var field FieldDescriptor

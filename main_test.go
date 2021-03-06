@@ -26,18 +26,11 @@ func TestFuzz(t *testing.T) {
 	gofakeit.Seed(0)
 	driver := drivers.New(flags.Get().Driver)
 	db := connector.Connection(driver)
-	describeQuery := driver.Describe(f.Table)
-	results, err := db.Query(describeQuery)
+	fields, err := driver.DescribeFields(f.Table, db)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	fields, err := driver.ParseFields(results)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
 	defer db.Close()
-
 	err = fuzzer.Run(db, fields, f)
 	if err != nil {
 		t.Fatal(err)

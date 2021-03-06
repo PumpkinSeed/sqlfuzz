@@ -6,7 +6,6 @@ import (
 
 	"github.com/PumpkinSeed/sqlfuzz/drivers"
 	"github.com/PumpkinSeed/sqlfuzz/pkg/connector"
-	"github.com/PumpkinSeed/sqlfuzz/pkg/descriptor"
 	"github.com/PumpkinSeed/sqlfuzz/pkg/flags"
 	"github.com/PumpkinSeed/sqlfuzz/pkg/fuzzer"
 	"github.com/brianvoe/gofakeit/v5"
@@ -23,7 +22,7 @@ func main() {
 	var tables []string
 	if f.Table == "" {
 		var err error
-		tables, err = descriptor.ShowTables(db)
+		tables, err = driver.ShowTables(db)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -32,12 +31,7 @@ func main() {
 	}
 	for _, table := range tables {
 		f.Table = table
-		describeQuery := driver.Describe(f.Table)
-		results, err := db.Query(describeQuery)
-		if err != nil {
-			log.Fatal(err.Error())
-		}
-		fields, err := driver.ParseFields(results)
+		fields, err := driver.DescribeFields(f.Table, db)
 		if err != nil {
 			log.Fatal(err.Error())
 		}

@@ -59,12 +59,12 @@ type FieldDescriptor struct {
 
 // Driver is the interface should satisfied by a certain driver
 type Driver interface {
+	ShowTables(db *sql.DB) ([]string, error)
 	Connection() string
 	Driver() string
 	Insert(fields []string, table string) string
 	MapField(descriptor FieldDescriptor) Field
-	Describe(table string) string
-	ParseFields(rows *sql.Rows) ([]FieldDescriptor, error)
+	DescribeFields(table string, db *sql.DB) ([]FieldDescriptor, error)
 }
 
 // New creates a new driver instance based on the flags
