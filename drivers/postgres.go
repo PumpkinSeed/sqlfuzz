@@ -42,7 +42,7 @@ func (p Postgres) Driver() string {
 }
 
 func (p Postgres) Insert(fields []string, table string) string {
-	return fmt.Sprintf(PSQLInsertTemplate, table, strings.Join(fields, "\",\""), pgValPlaceholder(len(fields)))
+	return fmt.Sprintf(PSQLInsertTemplate, table, strings.Join(fields, `","`), pgValPlaceholder(len(fields)))
 }
 
 func (p Postgres) MapField(descriptor FieldDescriptor) Field {
@@ -94,9 +94,7 @@ func parsePostgresFields(rows *sql.Rows) ([]FieldDescriptor, error) {
 	for rows.Next() {
 		var field FieldDescriptor
 		err := rows.Scan(&field.Field, &field.Type, &field.Length, &field.Default, &field.Null, &field.Precision, &field.Scale)
-		if field.Default.Valid && len(field.Default.String) > 0 {
-			field.HasDefaultValue = true
-		}
+		field.HasDefaultValue = field.Default.Valid && len(field.Default.String) > 0
 		if err != nil {
 			return nil, err
 		}

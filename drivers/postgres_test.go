@@ -1,33 +1,34 @@
 package drivers
 
 import (
-	_ "github.com/lib/pq"
-	"github.com/volatiletech/null"
+	"database/sql"
+	"fmt"
+	"log"
 	"reflect"
 	"testing"
+
+	_ "github.com/lib/pq"
+	"github.com/volatiletech/null"
 )
 
-/*
-Added and commented for the purpose of testing as the values will vary in each local setup.
-*/
-//func TestPostgres_DescribeFields(t *testing.T) {
-//
-//	connectionString := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable ", "127.0.0.1", "5432", "postgres", "password", "fuzzpostgres")
-//	db, err := sql.Open("postgres", connectionString)
-//	if err != nil {
-//		t.Errorf("Error opening postgres connectoin : %s", err.Error())
-//		return
-//	}
-//	driver := Postgres{}
-//	tables, err := driver.ShowTables(db)
-//	if err != nil {
-//		t.Errorf("Error describing table : %s", err.Error())
-//		return
-//	}
-//	for _, table := range tables {
-//		fmt.Println(table)
-//	}
-//}
+func ExamplePostgres_DescribeFields() {
+
+	connectionString := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable ", "127.0.0.1", "5432", "postgres", "password", "fuzzpostgres")
+	db, err := sql.Open("postgres", connectionString)
+	if err != nil {
+		log.Printf("Error opening postgres connectoin : %s", err.Error())
+		return
+	}
+	driver := Postgres{}
+	tables, err := driver.ShowTables(db)
+	if err != nil {
+		log.Printf("Error describing table : %s", err.Error())
+		return
+	}
+	for _, table := range tables {
+		fmt.Println(table)
+	}
+}
 
 func TestPostgres_MapField(t *testing.T) {
 	var scenarios = []struct {

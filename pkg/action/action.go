@@ -94,10 +94,10 @@ func generateData(driver drivers.Driver, fieldDescriptor drivers.FieldDescriptor
 				{Name: "password", Function: "password", Params: map[string][]string{"special": {"false"}}},
 			},
 		})
-		if err == nil {
-			return string(xml)
+		if err != nil {
+			return nil
 		}
-		return nil
+		return string(xml)
 	case drivers.UUID:
 		return gofakeit.UUID()
 	case drivers.BinaryString:
@@ -129,11 +129,7 @@ func randomString(length int16) string {
 func binaryString(length int) string {
 	var str []string
 	for i := 0; i < length; i++ {
-		num := 0
-		if gofakeit.Bool() {
-			num = 1
-		}
-		str = append(str, strconv.Itoa(num))
+		str = append(str, strconv.Itoa(gofakeit.Number(0, 1)))
 	}
 	return strings.Join(str, "")
 }
