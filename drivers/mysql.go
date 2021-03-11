@@ -176,8 +176,8 @@ func (MySQL) DescribeFields(table string, db *sql.DB) ([]FieldDescriptor, error)
 func (m MySQL) TestTable(db *sql.DB, table string) error {
 	query := `CREATE TABLE %s (
 		id INT(6) UNSIGNED,
-		firstname VARCHAR(30) NOT NULL,
-		lastname VARCHAR(30) NOT NULL,
+		firstname VARCHAR(30),
+		lastname VARCHAR(30),
 		email VARCHAR(50),
 		reg_date TIMESTAMP
 	)`
