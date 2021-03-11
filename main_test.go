@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/PumpkinSeed/sqlfuzz/drivers"
@@ -13,19 +14,28 @@ import (
 func TestFuzz(t *testing.T) {
 	f := flags.Flags{}
 	f.Driver = drivers.Flags{
-		Username: "mysql",
-		Password: "mysql",
-		Database: "mysql",
-		Host:     "127.0.0.1",
+		Username: "test",
+		Password: "test",
+		Database: "test",
+		Host:     "localhost",
 		Port:     "3306",
 		Driver:   "mysql",
 	}
 	f.Table = "Persons"
 	f.Parsed = true
 
+
+
 	gofakeit.Seed(0)
-	driver := drivers.New(flags.Get().Driver)
+	driver := drivers.New(f.Driver)
 	db := connector.Connection(driver)
+
+	if _, err := db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s", f.Table)); err != nil {
+		t.Fatal(err)
+	}
+	if err := driver.TestTable(db, f.Table); err != nil {
+		t.Fatal(err)
+	}
 	fields, err := driver.DescribeFields(f.Table, db)
 	if err != nil {
 		t.Fatal(err.Error())

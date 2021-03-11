@@ -65,6 +65,7 @@ type Driver interface {
 	Insert(fields []string, table string) string
 	MapField(descriptor FieldDescriptor) Field
 	DescribeFields(table string, db *sql.DB) ([]FieldDescriptor, error)
+	TestTable(conn *sql.DB, table string) error
 }
 
 // New creates a new driver instance based on the flags
