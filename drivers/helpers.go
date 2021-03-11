@@ -26,13 +26,10 @@ func length(field string, t string) []int16 {
 			result = append(result, int16(data))
 		}
 		return result
-	} else {
-		v, err := strconv.Atoi(str)
-		if err != nil {
-			panic(err)
-		}
-		return []int16{int16(v)}
 	}
-
-	return nil
+	v, err := strconv.Atoi(str)
+	if err != nil {
+		panic(err)
+	}
+	return []int16{int16(v)}
 }

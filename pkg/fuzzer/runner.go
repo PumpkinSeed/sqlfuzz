@@ -2,17 +2,17 @@ package fuzzer
 
 import (
 	"database/sql"
+	_ "github.com/lib/pq"
 	"log"
 	"sync"
 
 	"github.com/PumpkinSeed/sqlfuzz/drivers"
 	"github.com/PumpkinSeed/sqlfuzz/pkg/action"
-	"github.com/PumpkinSeed/sqlfuzz/pkg/descriptor"
 	"github.com/PumpkinSeed/sqlfuzz/pkg/flags"
 )
 
 // Run the commands in a worker pool
-func Run(db *sql.DB, fields []descriptor.FieldDescriptor, f flags.Flags) error {
+func Run(db *sql.DB, fields []drivers.FieldDescriptor, f flags.Flags) error {
 	numJobs := f.Num
 	workers := f.Workers
 	jobs := make(chan struct{}, numJobs)
@@ -32,7 +32,7 @@ func Run(db *sql.DB, fields []descriptor.FieldDescriptor, f flags.Flags) error {
 }
 
 // worker of the worker pool, executing the command, logging if fails
-func worker(db *sql.DB, jobs <-chan struct{}, fields []descriptor.FieldDescriptor, wg *sync.WaitGroup, f flags.Flags) {
+func worker(db *sql.DB, jobs <-chan struct{}, fields []drivers.FieldDescriptor, wg *sync.WaitGroup, f flags.Flags) {
 	for range jobs {
 		if err := action.Insert(db, fields, drivers.New(f.Driver), f.Table); err != nil {
 			log.Println(err)
