@@ -1,13 +1,36 @@
 package drivers
 
 import (
+	"database/sql"
 	"fmt"
 	"strings"
+)
+
+const (
+	MysSQLDescribeTableQuery = "SHOW TABLES;"
 )
 
 // MySQL implementation of the Driver
 type MySQL struct {
 	f Flags
+}
+
+func (m MySQL) ShowTables(db *sql.DB) ([]string, error) {
+	results, err := db.Query(MysSQLDescribeTableQuery)
+	if err != nil {
+		return nil, err
+	}
+	defer results.Close()
+	var tables []string
+	for results.Next() {
+		var table string
+		if err := results.Scan(&table); err != nil {
+			return nil, err
+		}
+		tables = append(tables, table)
+	}
+
+	return tables, nil
 }
 
 // Connection returns the specific connection string
@@ -27,8 +50,8 @@ func (m MySQL) Insert(fields []string, table string) string {
 }
 
 // MapField returns the actual fields
-func (m MySQL) MapField(field string) Field {
-	field = strings.ToLower(field)
+func (m MySQL) MapField(descriptor FieldDescriptor) Field {
+	field := strings.ToLower(descriptor.Field)
 	// String types
 	if strings.HasPrefix(field, "varchar") {
 		l := length(field, "varchar")
@@ -137,6 +160,28 @@ func (m MySQL) MapField(field string) Field {
 	return Field{Type: Unknown, Length: -1}
 }
 
+func (MySQL) DescribeFields(table string, db *sql.DB) ([]FieldDescriptor, error) {
+	describeQuery := fmt.Sprintf("DESCRIBE %s;", table)
+	results, err := db.Query(describeQuery)
+	if err != nil {
+		return nil, err
+	}
+	return parseMySQLFields(results)
+}
+
+func parseMySQLFields(results *sql.Rows) ([]FieldDescriptor, error) {
+	var fields []FieldDescriptor
+	for results.Next() {
+		var d FieldDescriptor
+		err := results.Scan(&d.Field, &d.Type, &d.Null, &d.Key, &d.Default, &d.Extra)
+		if err != nil {
+			return nil, err
+		}
+
+		fields = append(fields, d)
+	}
+	return fields, nil
+}
 func questionMarks(n int) string {
 	var q []string
 	for i := 0; i < n; i++ {
