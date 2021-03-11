@@ -17,7 +17,7 @@ func TestFuzz(t *testing.T) {
 		Username: "test",
 		Password: "test",
 		Database: "test",
-		Host:     "localhost",
+		Host:     "mysql",
 		Port:     "3306",
 		Driver:   "mysql",
 	}

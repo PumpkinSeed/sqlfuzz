@@ -17,6 +17,7 @@ jobs:
           MYSQL_PASSWORD: test
         ports:
           - 3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
     steps:
     - name: Install Go
       uses: actions/setup-go@v2
