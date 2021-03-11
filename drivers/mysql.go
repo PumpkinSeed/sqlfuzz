@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	MysSQLDescribeTableQuery = "SHOW TABLES;"
+	MySQLDescribeTableQuery = "SHOW TABLES;"
 )
 
 // MySQL implementation of the Driver
@@ -16,7 +16,7 @@ type MySQL struct {
 }
 
 func (m MySQL) ShowTables(db *sql.DB) ([]string, error) {
-	results, err := db.Query(MysSQLDescribeTableQuery)
+	results, err := db.Query(MySQLDescribeTableQuery)
 	if err != nil {
 		return nil, err
 	}
