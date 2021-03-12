@@ -67,6 +67,10 @@ type Driver interface {
 	DescribeFields(table string, db *sql.DB) ([]FieldDescriptor, error)
 }
 
+type Testable interface {
+	TestTable(conn *sql.DB, table string) error
+}
+
 // New creates a new driver instance based on the flags
 func New(f Flags) Driver {
 	switch f.Driver {
@@ -76,6 +80,18 @@ func New(f Flags) Driver {
 		return Postgres{f: f}
 	default:
 		log.Fatal("Driver not implemented")
+		return nil
+	}
+}
+
+func NewTestable(f Flags) Testable {
+	switch f.Driver {
+	case "mysql":
+		return MySQL{f: f}
+	case "postgres":
+		return Postgres{f: f}
+	default:
+		log.Fatal("Testable not implemented")
 		return nil
 	}
 }
