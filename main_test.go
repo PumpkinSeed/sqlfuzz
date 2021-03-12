@@ -28,12 +28,13 @@ func TestFuzz(t *testing.T) {
 
 	gofakeit.Seed(0)
 	driver := drivers.New(f.Driver)
+	testable := drivers.NewTestable(f.Driver)
 	db := connector.Connection(driver)
 
 	if _, err := db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s", f.Table)); err != nil {
 		t.Fatal(err)
 	}
-	if err := driver.TestTable(db, f.Table); err != nil {
+	if err := testable.TestTable(db, f.Table); err != nil {
 		t.Fatal(err)
 	}
 	fields, err := driver.DescribeFields(f.Table, db)
