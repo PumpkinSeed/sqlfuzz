@@ -1,6 +1,7 @@
 package drivers
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"strings"
@@ -120,12 +121,14 @@ func (m MySQL) MapField(descriptor FieldDescriptor) Field {
 	}
 
 	// Blob
-	if strings.HasPrefix(field, "blob") {
+	if strings.HasPrefix(field, "blob") || strings.HasPrefix(field, "tinyblob") ||
+		strings.HasPrefix(field, "mediumblob") || strings.HasPrefix(field, "longblob") {
 		return Field{Type: Blob, Length: -1}
 	}
 
 	// Text
-	if strings.HasPrefix(field, "text") {
+	if strings.HasPrefix(field, "text") || strings.HasPrefix(field, "tinytext") ||
+		strings.HasPrefix(field, "mediumtext") || strings.HasPrefix(field, "longtext") {
 		return Field{Type: Text, Length: -1}
 	}
 
@@ -169,6 +172,28 @@ func (MySQL) DescribeFields(table string, db *sql.DB) ([]FieldDescriptor, error)
 	return parseMySQLFields(results)
 }
 
+// TestTable only for test purposes
+func (m MySQL) TestTable(db *sql.DB, table string) error {
+	query := `CREATE TABLE %s (
+		id INT(6) UNSIGNED,
+		firstname VARCHAR(30),
+		lastname VARCHAR(30),
+		email VARCHAR(50),
+		reg_date TIMESTAMP
+	)`
+
+	res, err := db.ExecContext(context.Background(), fmt.Sprintf(query, table))
+	if err != nil {
+		return err
+	}
+
+	_, err = res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func parseMySQLFields(results *sql.Rows) ([]FieldDescriptor, error) {
 	var fields []FieldDescriptor
 	for results.Next() {
@@ -182,6 +207,7 @@ func parseMySQLFields(results *sql.Rows) ([]FieldDescriptor, error) {
 	}
 	return fields, nil
 }
+
 func questionMarks(n int) string {
 	var q []string
 	for i := 0; i < n; i++ {

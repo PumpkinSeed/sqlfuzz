@@ -1,6 +1,7 @@
 package drivers
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -87,6 +88,29 @@ func (p Postgres) DescribeFields(table string, db *sql.DB) ([]FieldDescriptor, e
 		return nil, err
 	}
 	return parsePostgresFields(results)
+}
+
+// TestTable only for test purposes
+func (p Postgres) TestTable(db *sql.DB, table string) error {
+	query := `CREATE TABLE %s (
+		user_id serial PRIMARY KEY,
+		username VARCHAR ( 50 ) UNIQUE NOT NULL,
+		password VARCHAR ( 50 ) NOT NULL,
+		email VARCHAR ( 255 ) UNIQUE NOT NULL,
+		created_on TIMESTAMP NOT NULL,
+        last_login TIMESTAMP
+	);`
+
+	res, err := db.ExecContext(context.Background(), fmt.Sprintf(query, table))
+	if err != nil {
+		return err
+	}
+
+	_, err = res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func parsePostgresFields(rows *sql.Rows) ([]FieldDescriptor, error) {

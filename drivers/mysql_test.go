@@ -147,8 +147,8 @@ func TestMapField(t *testing.T) {
 	for _, scenario := range scenarios {
 		output := MySQL{}.MapField(scenario.input)
 
-		if !reflect.DeepEqual(output, scenario.output) {
-			t.Errorf("Invalid output for %s, out: %+v", scenario.input.Field, output)
+		if !reflect.DeepEqual(output.Type, scenario.output.Type) {
+			t.Errorf("Invalid output for %s, out: %+v scenario out: %+v", scenario.input.Field, output, scenario.output)
 		}
 	}
 }

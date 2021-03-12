@@ -103,7 +103,7 @@ func generateData(driver drivers.Driver, fieldDescriptor drivers.FieldDescriptor
 	case drivers.BinaryString:
 		return binaryString(int(field.Length))
 	case drivers.Unknown:
-		log.Printf("unknown field type: %s\n", fieldDescriptor)
+		log.Printf("unknown field type: %s\n", fieldDescriptor.Field)
 		return nil
 	}
 
