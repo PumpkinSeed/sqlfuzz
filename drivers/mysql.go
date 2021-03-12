@@ -51,7 +51,7 @@ func (m MySQL) Insert(fields []string, table string) string {
 
 // MapField returns the actual fields
 func (m MySQL) MapField(descriptor FieldDescriptor) Field {
-	field := strings.ToLower(descriptor.Field)
+	field := strings.ToLower(descriptor.Type)
 	// String types
 	if strings.HasPrefix(field, "varchar") {
 		l := length(field, "varchar")

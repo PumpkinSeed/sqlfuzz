@@ -81,8 +81,7 @@ func (p Postgres) MapField(descriptor FieldDescriptor) Field {
 }
 
 func (p Postgres) DescribeFields(table string, db *sql.DB) ([]FieldDescriptor, error) {
-	describeQuery := fmt.Sprintf(PSQLDescribeTemplate, table)
-	results, err := db.Query(describeQuery)
+	results, err := db.Query(fmt.Sprintf(PSQLDescribeTemplate, strings.ToLower(table)))
 	if err != nil {
 		return nil, err
 	}
