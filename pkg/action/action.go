@@ -4,12 +4,13 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"fmt"
-	_ "github.com/lib/pq"
 	"log"
 	"math/rand"
 	"strconv"
 	"strings"
 	"time"
+
+	_ "github.com/lib/pq"
 
 	"github.com/PumpkinSeed/sqlfuzz/drivers"
 	"github.com/brianvoe/gofakeit/v5"
@@ -78,7 +79,15 @@ func generateData(driver drivers.Driver, fieldDescriptor drivers.FieldDescriptor
 			gofakeit.Password(true, true, false, false, false, 6),
 		)
 	case drivers.Time:
-		return gofakeit.Date()
+		return time.Date(
+			gofakeit.Number(1970, 2038),
+			time.Month(gofakeit.Number(0, 12)),
+			gofakeit.Day(),
+			gofakeit.Hour(),
+			gofakeit.Minute(),
+			gofakeit.Second(),
+			gofakeit.NanoSecond(),
+			time.UTC)
 	case drivers.Year:
 		return gofakeit.Number(1901, 2155)
 	case drivers.XML:

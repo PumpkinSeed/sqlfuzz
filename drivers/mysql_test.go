@@ -12,133 +12,133 @@ func TestMapField(t *testing.T) {
 	}{
 		{
 			input: FieldDescriptor{
-				Field: "varchar(12)",
+				Type: "varchar(12)",
 			},
 			output: Field{Type: String, Length: 12},
 		},
 		{
 			input: FieldDescriptor{
-				Field: "char(100)",
+				Type: "char(100)",
 			},
 			output: Field{Type: String, Length: 100},
 		},
 		{
 			input: FieldDescriptor{
-				Field: "varbinary(100)",
+				Type: "varbinary(100)",
 			},
 			output: Field{Type: String, Length: 100},
 		},
 		{
 			input: FieldDescriptor{
-				Field: "binary(100)",
+				Type: "binary(100)",
 			},
 			output: Field{Type: String, Length: 100},
 		},
 		{
 			input: FieldDescriptor{
-				Field: "tinyint",
+				Type: "tinyint",
 			},
 			output: Field{Type: Bool, Length: -1},
 		},
 		{
 			input: FieldDescriptor{
-				Field: "smallint",
+				Type: "smallint",
 			},
 			output: Field{Type: Int16, Length: -1},
 		},
 		{
 			input: FieldDescriptor{
-				Field: "mediumint",
+				Type: "mediumint",
 			},
 			output: Field{Type: Int16, Length: -1},
 		},
 		{
 			input: FieldDescriptor{
-				Field: "int",
+				Type: "int",
 			},
 			output: Field{Type: Int32, Length: -1},
 		},
 		{
 			input: FieldDescriptor{
-				Field: "bigint",
+				Type: "bigint",
 			},
 			output: Field{Type: Int32, Length: -1},
 		},
 		{
 			input: FieldDescriptor{
-				Field: "decimal(12, 4)",
+				Type: "decimal(12, 4)",
 			},
 			output: Field{Type: Float, Length: 8},
 		},
 		{
 			input: FieldDescriptor{
-				Field: "float(12, 5)",
+				Type: "float(12, 5)",
 			},
 			output: Field{Type: Float, Length: 7},
 		},
 		{
 			input: FieldDescriptor{
-				Field: "double(20,5)",
+				Type: "double(20,5)",
 			},
 			output: Field{Type: Float, Length: 15},
 		},
 		{
 			input: FieldDescriptor{
-				Field: "blob",
+				Type: "blob",
 			},
 			output: Field{Type: Blob, Length: -1},
 		},
 		{
 			input: FieldDescriptor{
-				Field: "tinyblob",
+				Type: "tinyblob",
 			},
 			output: Field{Type: Blob, Length: -1},
 		},
 		{
 			input: FieldDescriptor{
-				Field: "mediumblob",
+				Type: "mediumblob",
 			},
 			output: Field{Type: Blob, Length: -1},
 		},
 		{
 			input: FieldDescriptor{
-				Field: "longblob",
+				Type: "longblob",
 			},
 			output: Field{Type: Blob, Length: -1},
 		},
 		{
 			input: FieldDescriptor{
-				Field: "text",
+				Type: "text",
 			},
 			output: Field{Type: Text, Length: -1},
 		},
 		{
 			input: FieldDescriptor{
-				Field: "tinytext",
+				Type: "tinytext",
 			},
 			output: Field{Type: Text, Length: -1},
 		},
 		{
 			input: FieldDescriptor{
-				Field: "mediumtext",
+				Type: "mediumtext",
 			},
 			output: Field{Type: Text, Length: -1},
 		},
 		{
 			input: FieldDescriptor{
-				Field: "longtext",
+				Type: "longtext",
 			},
 			output: Field{Type: Text, Length: -1},
 		},
 		{
 			input: FieldDescriptor{
-				Field: "json",
+				Type: "json",
 			},
 			output: Field{Type: Json, Length: -1},
 		},
 		{
 			input: FieldDescriptor{
-				Field: "enum(test, this, data)",
+				Type: "enum(test, this, data)",
 			},
 			output: Field{Type: Enum, Length: -1, Enum: []string{"test", "this", "data"}},
 		},
