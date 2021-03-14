@@ -46,7 +46,11 @@ go install main.go
 ### Usage
 
 ```
+# MySQL
 sqlfuzz -u username -p password -d database -h 127.0.0.1 -t table -n 100000 -w 100
+
+# Postgres
+sqlfuzz -u username -p password -d database -h 127.0.0.1 -t table -n 100000 -w 100 -P 5432 -D postgres
 ```
 
 #### Flags
@@ -56,7 +60,7 @@ sqlfuzz -u username -p password -d database -h 127.0.0.1 -t table -n 100000 -w 1
 - `d`: Database name for database connection
 - `h`: Host for database connection
 - `P`: Port for database connection
-- `D`: Driver for database connection (currently only `mysql`)
+- `D`: Driver for database connection (supported: `mysql`, `postgres`)
 - `t`: Table for fuzzing
 - `n`: Number of rows to fuzz
 - `w`: Concurrent workers to work on fuzzing
