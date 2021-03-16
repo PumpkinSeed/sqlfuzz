@@ -2,13 +2,12 @@ package main
 
 import (
 	"fmt"
-	"testing"
-
 	"github.com/PumpkinSeed/sqlfuzz/drivers"
 	"github.com/PumpkinSeed/sqlfuzz/pkg/connector"
 	"github.com/PumpkinSeed/sqlfuzz/pkg/flags"
 	"github.com/PumpkinSeed/sqlfuzz/pkg/fuzzer"
 	"github.com/brianvoe/gofakeit/v5"
+	"testing"
 )
 
 func TestFuzz(t *testing.T) {
@@ -70,19 +69,27 @@ func TestFuzz(t *testing.T) {
 func TestFuzzPostgres(t *testing.T) {
 	f := flags.Flags{}
 	f.Driver = drivers.Flags{
-		Username: "postgres",
-		Password: "password",
-		Database: "fuzzpostgres",
+		Username: "test",
+		Password: "test",
+		Database: "test",
 		Host:     "127.0.0.1",
 		Port:     "5432",
 		Driver:   "postgres",
 	}
-	f.Table = "pg_data_types"
+	f.Table = "Persons"
 	f.Parsed = true
 
 	gofakeit.Seed(0)
 	driver := drivers.New(f.Driver)
+	testable := drivers.NewTestable(f.Driver)
 	db := connector.Connection(driver)
+
+	if _, err := db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s", f.Table)); err != nil {
+		t.Fatal(err)
+	}
+	if err := testable.TestTable(db, f.Table); err != nil {
+		t.Fatal(err)
+	}
 	fields, err := driver.DescribeFields(f.Table, db)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -91,6 +98,37 @@ func TestFuzzPostgres(t *testing.T) {
 	err = fuzzer.Run(db, fields, f)
 	if err != nil {
 		t.Fatal(err)
+	}
+	res, err := db.Query(fmt.Sprintf("SELECT * FROM %s", f.Table))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer res.Close()
+	var i int
+	for res.Next() {
+		columns, err := res.Columns()
+		if err != nil {
+			t.Error(err)
+		}
+		var valueHolders []interface{}
+		for j := 0; j < len(columns); j++ {
+			var tempInterface interface{}
+			valueHolders = append(valueHolders, &tempInterface)
+		}
+		if err := res.Scan(valueHolders...); err != nil {
+			t.Error(err)
+			continue
+		}
+		for index, val := range valueHolders {
+			// If given column index is valid and value is nil, return error
+			if !drivers.PostgresInvalidIndicesMap[index] && val == nil {
+				t.Error(fmt.Sprintf("Invalid value received for column index %d", index))
+			}
+		}
+		i++
+	}
+	if i == 0 {
+		t.Error("the table should not be empty")
 	}
 }
 
