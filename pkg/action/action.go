@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"log"
+	"math"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -58,7 +59,11 @@ func generateData(driver drivers.Driver, fieldDescriptor drivers.FieldDescriptor
 	case drivers.Int32:
 		return gofakeit.Number(1, 2147483647)
 	case drivers.Float:
-		return gofakeit.Number(1, 2147483647)
+		max := 2147483647
+		if fieldDescriptor.Precision.Valid && fieldDescriptor.Scale.Valid {
+			max = int(math.Pow10(fieldDescriptor.Precision.Int - fieldDescriptor.Scale.Int))
+		}
+		return gofakeit.Number(1, max)
 	case drivers.Blob:
 		return base64.StdEncoding.EncodeToString([]byte(randomString(12)))
 	case drivers.Text:
