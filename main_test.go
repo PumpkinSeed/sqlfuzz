@@ -72,7 +72,7 @@ func TestFuzzPostgres(t *testing.T) {
 		Username: "test",
 		Password: "test",
 		Database: "test",
-		Host:     "127.0.0.1",
+		Host:     "localhost",
 		Port:     "5432",
 		Driver:   "postgres",
 	}
