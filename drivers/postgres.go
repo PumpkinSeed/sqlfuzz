@@ -11,7 +11,7 @@ import (
 const (
 	PSQLDescribeTemplate   = "select column_name, data_type, character_maximum_length, column_default, is_nullable,numeric_precision,numeric_scale from INFORMATION_SCHEMA.COLUMNS where table_name = '%s'"
 	PSQLConnectionTemplate = "host=%s port=%s user=%s password=%s dbname=%s sslmode=disable"
-	PSQLInsertTemplate     = "INSERT INTO %s(\"%s\") VALUES(%s)"
+	PSQLInsertTemplate     = `INSERT INTO %s("%s") VALUES(%s)`
 	PSQLShowTablesQuery    = "SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema';"
 )
 
@@ -75,6 +75,8 @@ func (p Postgres) MapField(descriptor FieldDescriptor) Field {
 		return Field{Type: XML, Length: -1}
 	case "uuid":
 		return Field{Type: UUID, Length: -1}
+	case "boolean":
+		return Field{Type: Bool, Length: -1}
 	default:
 		log.Printf("Field not identified. Name %s Length %d", descriptor.Field, descriptor.Length.Int)
 	}

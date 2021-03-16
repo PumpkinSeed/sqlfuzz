@@ -67,6 +67,33 @@ func TestFuzz(t *testing.T) {
 	}
 }
 
+func TestFuzzPostgres(t *testing.T) {
+	f := flags.Flags{}
+	f.Driver = drivers.Flags{
+		Username: "postgres",
+		Password: "password",
+		Database: "fuzzpostgres",
+		Host:     "127.0.0.1",
+		Port:     "5432",
+		Driver:   "postgres",
+	}
+	f.Table = "pg_data_types"
+	f.Parsed = true
+
+	gofakeit.Seed(0)
+	driver := drivers.New(f.Driver)
+	db := connector.Connection(driver)
+	fields, err := driver.DescribeFields(f.Table, db)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	defer db.Close()
+	err = fuzzer.Run(db, fields, f)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 type testTable struct {
 	id        int
 	firstname string
