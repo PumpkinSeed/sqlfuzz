@@ -9,22 +9,13 @@ import (
 )
 
 /*
-Below columns are not yet implemented and hence not null constraint is not added here. Also, these columns are ignored while testing
+Below columns are not yet implemented and removed from table. Add these once implemented.
 col20 cidr
 col24 inet
 col30 line
 col31 macaddr
 col32 money
 */
-
-var PostgresInvalidIndicesMap = map[int]bool{
-	20: true,
-	24: true,
-	30: true,
-	31: true,
-	32: true,
-}
-
 const CreateTable = `CREATE TABLE IF NOT EXISTS %s (
    col1 bigint not null,
    col2 int8 not null,
@@ -46,19 +37,14 @@ const CreateTable = `CREATE TABLE IF NOT EXISTS %s (
    col17 character varying(10) not null,
    col18 varchar not null,
    col19 varchar(10) not null,
-   col20 cidr,
    col21 date not null,
    col22 double precision not null,
    col23 float8 not null,
-   col24 inet,
    col25 integer not null,
    col26 int not null,
    col27 int4 not null,
    col28 json not null,
    col29 jsonb not null,
-   col30 line,
-   col31 macaddr,
-   col32 money,
    col33 numeric(5,2) not null,
    col34 decimal(5,2) not null,
    col35 real not null,

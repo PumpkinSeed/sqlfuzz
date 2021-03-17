@@ -121,8 +121,8 @@ func TestFuzzPostgres(t *testing.T) {
 		}
 		for index, val := range valueHolders {
 			// If given column index is valid and value is nil, return error
-			if !drivers.PostgresInvalidIndicesMap[index] && val == nil {
-				t.Error(fmt.Sprintf("Invalid value received for column index %d", index))
+			if val == nil {
+				t.Error(fmt.Sprintf("Invalid value received for column  %s", columns[index]))
 			}
 		}
 		i++
