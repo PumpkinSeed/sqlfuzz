@@ -13,7 +13,7 @@ var (
 	mu          = sync.Mutex{}
 )
 
-// Connection building a singleton connection to the SQL database
+// Connection building a singleton connection to the database for give driver
 func Connection(d drivers.Driver) *sql.DB {
 	mu.Lock()
 	defer mu.Unlock()
@@ -37,8 +37,7 @@ func Close(d drivers.Driver) error {
 		return nil
 	}
 	delete(driverDBMap, d.Driver())
-	err := db.Close()
-	return err
+	return db.Close()
 }
 
 // connect doing the direct connection open to the SQL database
