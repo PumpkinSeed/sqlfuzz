@@ -9,15 +9,15 @@ import (
 )
 
 var (
-	dbMap = make(map[string]*sql.DB)
-	mu    = sync.Mutex{}
+	driverDBMap = make(map[string]*sql.DB)
+	mu          = sync.Mutex{}
 )
 
 // Connection building a singleton connection to the SQL database
 func Connection(d drivers.Driver) *sql.DB {
 	mu.Lock()
 	defer mu.Unlock()
-	if db, ok := dbMap[d.Driver()]; ok {
+	if db, ok := driverDBMap[d.Driver()]; ok {
 		return db
 	}
 	db, err := connect(d)
@@ -25,18 +25,18 @@ func Connection(d drivers.Driver) *sql.DB {
 		log.Fatal(err)
 		return nil
 	}
-	dbMap[d.Driver()] = db
+	driverDBMap[d.Driver()] = db
 	return db
 }
 
 func Close(d drivers.Driver) error {
 	mu.Lock()
 	defer mu.Unlock()
-	db, ok := dbMap[d.Driver()]
+	db, ok := driverDBMap[d.Driver()]
 	if !ok {
 		return nil
 	}
-	delete(dbMap, d.Driver())
+	delete(driverDBMap, d.Driver())
 	err := db.Close()
 	return err
 }
