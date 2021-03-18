@@ -11,10 +11,9 @@ import (
 	"strings"
 	"time"
 
-	_ "github.com/lib/pq"
-
 	"github.com/PumpkinSeed/sqlfuzz/drivers"
 	"github.com/brianvoe/gofakeit/v5"
+	_ "github.com/lib/pq"
 	"github.com/rs/xid"
 )
 

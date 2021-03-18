@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/PumpkinSeed/sqlfuzz/drivers"
 	"github.com/PumpkinSeed/sqlfuzz/pkg/connector"
 	"github.com/PumpkinSeed/sqlfuzz/pkg/flags"
 	"github.com/PumpkinSeed/sqlfuzz/pkg/fuzzer"
 	"github.com/brianvoe/gofakeit/v5"
-	"testing"
 )
 
 func TestFuzz(t *testing.T) {

@@ -2,8 +2,9 @@ package drivers
 
 import (
 	"database/sql"
-	"github.com/volatiletech/null"
 	"log"
+
+	"github.com/volatiletech/null"
 )
 
 type Type int16
