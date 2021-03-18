@@ -5,26 +5,42 @@ import (
 	"github.com/PumpkinSeed/sqlfuzz/drivers"
 	_ "github.com/lib/pq"
 	"log"
+	"sync"
 )
 
 var (
-	db *sql.DB
+	driverDBMap = make(map[string]*sql.DB)
+	mu          = sync.Mutex{}
 )
 
-// Connection building a singleton connection to the SQL database
+// Connection building a singleton connection to the database for give driver
 func Connection(d drivers.Driver) *sql.DB {
-	if db == nil {
-		connect(d)
+	mu.Lock()
+	defer mu.Unlock()
+	if db, ok := driverDBMap[d.Driver()]; ok {
+		return db
 	}
-
+	db, err := connect(d)
+	if err != nil {
+		log.Fatal(err)
+		return nil
+	}
+	driverDBMap[d.Driver()] = db
 	return db
 }
 
-// connect doing the direct connection open to the SQL database
-func connect(d drivers.Driver) {
-	var err error
-	db, err = sql.Open(d.Driver(), d.Connection())
-	if err != nil {
-		log.Fatal(err)
+func Close(d drivers.Driver) error {
+	mu.Lock()
+	defer mu.Unlock()
+	db, ok := driverDBMap[d.Driver()]
+	if !ok {
+		return nil
 	}
+	delete(driverDBMap, d.Driver())
+	return db.Close()
+}
+
+// connect doing the direct connection open to the SQL database
+func connect(d drivers.Driver) (*sql.DB, error) {
+	return sql.Open(d.Driver(), d.Connection())
 }

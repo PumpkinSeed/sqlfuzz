@@ -8,10 +8,66 @@ import (
 	"strings"
 )
 
+/*
+Below columns are not yet implemented and removed from table. Add these once implemented.
+col20 cidr
+col24 inet
+col30 line
+col31 macaddr
+col32 money
+*/
+const CreateTable = `CREATE TABLE IF NOT EXISTS %s (
+   col1 bigint not null,
+   col2 int8 not null,
+   col3 bit(10) not null,
+   col4 bit not null,
+   col5 bit varying not null,
+   col6 bit varying(10) not null,
+   col64 bit varying(1024) not null,
+   col7 varbit not null,
+   col8 varbit(10) not null,
+   col9 boolean not null,
+   col10 bool not null,
+   col11 bytea not null,
+   col12 character not null,
+   col13 character(10) not null,
+   col14 char not null,
+   col15 char(10) not null,
+   col16 character varying not null,
+   col17 character varying(10) not null,
+   col18 varchar not null,
+   col19 varchar(10) not null,
+   col21 date not null,
+   col22 double precision not null,
+   col23 float8 not null,
+   col25 integer not null,
+   col26 int not null,
+   col27 int4 not null,
+   col28 json not null,
+   col29 jsonb not null,
+   col33 numeric(5,2) not null,
+   col34 decimal(5,2) not null,
+   col35 real not null,
+   col36 float4 not null,
+   col37 smallint not null,
+   col38 int2 not null,
+   col39 smallserial not null,
+   col40 serial2 not null,
+   col41 serial not null,
+   col42 serial4 not null,
+   col43 text not null,
+   col44 time not null,
+   col45 timetz not null,
+   col46 timestamp not null,
+   col47 uuid not null,
+   col48 xml not null
+);
+`
+
 const (
 	PSQLDescribeTemplate   = "select column_name, data_type, character_maximum_length, column_default, is_nullable,numeric_precision,numeric_scale from INFORMATION_SCHEMA.COLUMNS where table_name = '%s'"
 	PSQLConnectionTemplate = "host=%s port=%s user=%s password=%s dbname=%s sslmode=disable"
-	PSQLInsertTemplate     = "INSERT INTO %s(\"%s\") VALUES(%s)"
+	PSQLInsertTemplate     = `INSERT INTO %s("%s") VALUES(%s)`
 	PSQLShowTablesQuery    = "SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema';"
 )
 
@@ -57,6 +113,7 @@ func (p Postgres) MapField(descriptor FieldDescriptor) Field {
 		if descriptor.Length.Valid && descriptor.Length.Int > 0 {
 			return Field{Type: String, Length: int16(descriptor.Length.Int)}
 		}
+		return Field{Type: String, Length: -1}
 	case "date":
 		return Field{Type: Time, Length: -1}
 	case "double precision", "numeric", "real":
@@ -75,6 +132,8 @@ func (p Postgres) MapField(descriptor FieldDescriptor) Field {
 		return Field{Type: XML, Length: -1}
 	case "uuid":
 		return Field{Type: UUID, Length: -1}
+	case "boolean":
+		return Field{Type: Bool, Length: -1}
 	default:
 		log.Printf("Field not identified. Name %s Length %d", descriptor.Field, descriptor.Length.Int)
 	}
@@ -91,16 +150,7 @@ func (p Postgres) DescribeFields(table string, db *sql.DB) ([]FieldDescriptor, e
 
 // TestTable only for test purposes
 func (p Postgres) TestTable(db *sql.DB, table string) error {
-	query := `CREATE TABLE %s (
-		user_id serial PRIMARY KEY,
-		username VARCHAR ( 50 ) UNIQUE NOT NULL,
-		password VARCHAR ( 50 ) NOT NULL,
-		email VARCHAR ( 255 ) UNIQUE NOT NULL,
-		created_on TIMESTAMP NOT NULL,
-        last_login TIMESTAMP
-	);`
-
-	res, err := db.ExecContext(context.Background(), fmt.Sprintf(query, table))
+	res, err := db.ExecContext(context.Background(), fmt.Sprintf(CreateTable, table))
 	if err != nil {
 		return err
 	}
