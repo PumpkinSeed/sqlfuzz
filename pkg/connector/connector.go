@@ -2,9 +2,10 @@ package connector
 
 import (
 	"database/sql"
+	"log"
+
 	"github.com/PumpkinSeed/sqlfuzz/drivers"
 	_ "github.com/lib/pq"
-	"log"
 )
 
 // Connection building a singleton connection to the database for give driver

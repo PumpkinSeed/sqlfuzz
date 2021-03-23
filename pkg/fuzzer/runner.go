@@ -1,13 +1,14 @@
 package fuzzer
 
 import (
+	"log"
+	"sync"
+
 	"github.com/PumpkinSeed/sqlfuzz/drivers"
 	"github.com/PumpkinSeed/sqlfuzz/pkg/action"
 	"github.com/PumpkinSeed/sqlfuzz/pkg/connector"
 	"github.com/PumpkinSeed/sqlfuzz/pkg/flags"
 	_ "github.com/lib/pq"
-	"log"
-	"sync"
 )
 
 // Run the commands in a worker pool
