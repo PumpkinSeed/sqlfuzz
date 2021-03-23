@@ -36,7 +36,7 @@ func main() {
 			log.Fatal(err.Error())
 		}
 		t := time.Now()
-		if err := fuzzer.Run(db, fields, f); err != nil {
+		if err := fuzzer.Run(fields, f); err != nil {
 			log.Fatal(err.Error())
 		}
 		log.Printf("Fuzzing %s table taken: %v \n", table, time.Since(t))

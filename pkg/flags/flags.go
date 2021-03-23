@@ -30,9 +30,9 @@ func Get() Flags {
 // parse parsing the flags into the f variable
 func parse() {
 	if !f.Parsed {
-		flag.StringVar(&f.Driver.Username, "u", "", "Username for the database connection")
-		flag.StringVar(&f.Driver.Password, "p", "", "Password for the database connection")
-		flag.StringVar(&f.Driver.Database, "d", "", "Database of the database connection")
+		flag.StringVar(&f.Driver.Username, "u", "test", "Username for the database connection")
+		flag.StringVar(&f.Driver.Password, "p", "test", "Password for the database connection")
+		flag.StringVar(&f.Driver.Database, "d", "test", "Database of the database connection")
 		flag.StringVar(&f.Driver.Host, "h", "localhost", "Host for the database connection")
 		flag.StringVar(&f.Driver.Port, "P", "3306", "Port for the database connection")
 		flag.StringVar(&f.Driver.Driver, "D", "mysql", "Driver for the database connection (mysql, postgres, etc.)")
