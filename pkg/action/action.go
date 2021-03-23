@@ -31,13 +31,7 @@ func Insert(db *sql.DB, fields []drivers.FieldDescriptor, driver drivers.Driver,
 	}
 	query := driver.Insert(f, table)
 
-	ins, err := db.Prepare(query)
-	if err != nil {
-		log.Printf("invalid preparing query: %s\n", query)
-		return fmt.Errorf("error preparing query: %w", err)
-	}
-
-	_, err = ins.Exec(values...)
+	_, err := db.Exec(query, values...)
 	return err
 }
 

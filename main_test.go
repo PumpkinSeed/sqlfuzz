@@ -23,12 +23,14 @@ func TestFuzz(t *testing.T) {
 	}
 	f.Table = "Persons"
 	f.Parsed = true
+	f.Num = 10
+	f.Workers = 2
 
 	gofakeit.Seed(0)
 	driver := drivers.New(f.Driver)
 	testable := drivers.NewTestable(f.Driver)
 	db := connector.Connection(driver)
-	defer connector.Close(driver)
+	defer db.Close()
 	if _, err := db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s", f.Table)); err != nil {
 		t.Fatal(err)
 	}
@@ -39,7 +41,7 @@ func TestFuzz(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	err = fuzzer.Run(db, fields, f)
+	err = fuzzer.Run(fields, f)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -78,12 +80,14 @@ func TestFuzzPostgres(t *testing.T) {
 	}
 	f.Table = "Persons"
 	f.Parsed = true
+	f.Num = 10
+	f.Workers = 2
 
 	gofakeit.Seed(0)
 	driver := drivers.New(f.Driver)
 	testable := drivers.NewTestable(f.Driver)
 	db := connector.Connection(driver)
-	defer connector.Close(driver)
+	defer db.Close()
 	if _, err := db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s", f.Table)); err != nil {
 		t.Fatal(err)
 	}
@@ -94,7 +98,7 @@ func TestFuzzPostgres(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	err = fuzzer.Run(db, fields, f)
+	err = fuzzer.Run(fields, f)
 	if err != nil {
 		t.Fatal(err)
 	}

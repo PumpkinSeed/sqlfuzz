@@ -3,42 +3,20 @@ package connector
 import (
 	"database/sql"
 	"log"
-	"sync"
 
 	"github.com/PumpkinSeed/sqlfuzz/drivers"
 	_ "github.com/lib/pq"
 )
 
-var (
-	driverDBMap = make(map[string]*sql.DB)
-	mu          = sync.Mutex{}
-)
-
 // Connection building a singleton connection to the database for give driver
 func Connection(d drivers.Driver) *sql.DB {
-	mu.Lock()
-	defer mu.Unlock()
-	if db, ok := driverDBMap[d.Driver()]; ok {
-		return db
-	}
 	db, err := connect(d)
 	if err != nil {
 		log.Fatal(err)
 		return nil
 	}
-	driverDBMap[d.Driver()] = db
-	return db
-}
 
-func Close(d drivers.Driver) error {
-	mu.Lock()
-	defer mu.Unlock()
-	db, ok := driverDBMap[d.Driver()]
-	if !ok {
-		return nil
-	}
-	delete(driverDBMap, d.Driver())
-	return db.Close()
+	return db
 }
 
 // connect doing the direct connection open to the SQL database
