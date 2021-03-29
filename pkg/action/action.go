@@ -17,8 +17,71 @@ import (
 	"github.com/rs/xid"
 )
 
+func InsertMulti(args ...interface{}) error {
+	db := args[0].(*sql.DB)
+	driver := args[1].(drivers.Driver)
+	tableToFieldsMap := args[2].(map[string][]drivers.FieldDescriptor)
+	insertionOrder := args[3].([]string)
+	//func InsertMulti(db *sql.DB, driver drivers.Driver, tableToFieldsMap map[string][]drivers.FieldDescriptor, insertionOrder []string) error {
+	tableFieldValuesMap := make(map[string]map[string]interface{})
+	for _, table := range insertionOrder {
+		if fields, ok := tableToFieldsMap[table]; ok {
+			var f = make([]string, 0, len(fields))
+			var values []interface{}
+			for _, field := range fields {
+				f = append(f, field.Field)
+				if field.HasDefaultValue {
+					continue
+				}
+				var data interface{}
+				if field.ForeignKeyDescriptor != nil {
+					if foreignTableFields, ok := tableFieldValuesMap[field.ForeignKeyDescriptor.ForeignTableName]; ok {
+						if val, ok := foreignTableFields[field.ForeignKeyDescriptor.ForeignColumnName]; ok {
+							data = val
+							continue
+						}
+					}
+					val, err := getLatestColumnValue(field.ForeignKeyDescriptor.ForeignTableName, field.ForeignKeyDescriptor.ForeignColumnName, db)
+					if err != nil {
+						return err
+					}
+					data = val
+					// Get from table. If no value present in table as well, throw error.
+				} else {
+					data = generateData(driver, field)
+				}
+				values = append(values, data)
+			}
+			query := driver.Insert(f, table)
+			_, err := db.Exec(query, values...)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func getLatestColumnValue(table, column string, db *sql.DB) (interface{}, error) {
+	query := fmt.Sprintf("select %v from %v order by %v desc limit 1", column, table, column)
+	rows, err := db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	var val interface{}
+	for rows.Next() {
+		rows.Scan(&val)
+	}
+	return val, nil
+}
+
 // Insert is inserting a random generated data into the chosen table
-func Insert(db *sql.DB, fields []drivers.FieldDescriptor, driver drivers.Driver, table string) error {
+func Insert(args ...interface{}) error {
+	//func Insert(db *sql.DB, fields []drivers.FieldDescriptor, driver drivers.Driver, table string) error {
+	db := args[0].(*sql.DB)
+	fields := args[1].([]drivers.FieldDescriptor)
+	driver := args[2].(drivers.Driver)
+	table := args[3].(string)
 	var f = make([]string, 0, len(fields))
 	var values = make([]interface{}, 0, len(fields))
 	for _, field := range fields {

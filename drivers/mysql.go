@@ -3,6 +3,7 @@ package drivers
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -170,6 +171,10 @@ func (MySQL) DescribeFields(table string, db *sql.DB) ([]FieldDescriptor, error)
 		return nil, err
 	}
 	return parseMySQLFields(results)
+}
+
+func (MySQL) MultiDescribe(tables []string, db *sql.DB) (map[string][]FieldDescriptor, []string, error) {
+	return nil, nil, errors.New("error : Not yet implemented")
 }
 
 // TestTable only for test purposes

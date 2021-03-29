@@ -1,7 +1,10 @@
 package drivers
 
 import (
+	"encoding/json"
+	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 
 	_ "github.com/lib/pq"
@@ -39,4 +42,31 @@ func TestPostgres_MapField(t *testing.T) {
 			t.Errorf("Invalid output for %s, out: %+v", scenario.input.Field, output)
 		}
 	}
+}
+
+func TestPostgres_MultiDescribe(t *testing.T) {
+	db, err := getConnection()
+	if err != nil {
+		t.Errorf("error getting postgres connection : %v", err.Error())
+	}
+	tableCreateCommandMap, tables := getMultiTableCreateCommandMapPostgres()
+	for _, table := range tables {
+		createCommand := tableCreateCommandMap[table]
+		_, err := db.Query(strings.TrimSpace(createCommand))
+		if err != nil {
+			t.Errorf("error creating table %v", err.Error())
+		}
+	}
+	tableFieldsMap, insertionOrder, err := Postgres{}.MultiDescribe(tables, db)
+	if err != nil {
+		t.Errorf("error descriving tables %v. Error : %v", tables, err)
+	}
+	if len(tableFieldsMap) == 0 || len(insertionOrder) != len(tableFieldsMap) || len(insertionOrder) != len(tables) {
+		t.Errorf("error receiving required fields count. input len %v described fields len %v insertion order length %v", len(tables), len(tableFieldsMap), len(insertionOrder))
+	}
+	tableFieldMapStr, err := json.Marshal(tableFieldsMap)
+	if err != nil {
+		t.Error(err)
+	}
+	fmt.Println(string(tableFieldMapStr))
 }

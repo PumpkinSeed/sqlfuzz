@@ -44,18 +44,27 @@ type Field struct {
 	Enum   []string
 }
 
+type FKDescriptor struct {
+	ConstraintName    string
+	TableName         string
+	ColumnName        string
+	ForeignTableName  string
+	ForeignColumnName string
+}
+
 //FieldDescriptor represents a field described by the table in the SQL database
 type FieldDescriptor struct {
-	Field           string
-	Type            string
-	Null            string
-	Key             string
-	Length          null.Int
-	Default         null.String
-	Extra           string
-	Precision       null.Int
-	Scale           null.Int
-	HasDefaultValue bool
+	Field                string
+	Type                 string
+	Null                 string
+	Key                  string
+	Length               null.Int
+	Default              null.String
+	Extra                string
+	Precision            null.Int
+	Scale                null.Int
+	HasDefaultValue      bool
+	ForeignKeyDescriptor *FKDescriptor
 }
 
 // Driver is the interface should satisfied by a certain driver
@@ -66,6 +75,7 @@ type Driver interface {
 	Insert(fields []string, table string) string
 	MapField(descriptor FieldDescriptor) Field
 	DescribeFields(table string, db *sql.DB) ([]FieldDescriptor, error)
+	MultiDescribe(tables []string, db *sql.DB) (map[string][]FieldDescriptor, []string, error)
 }
 
 type Testable interface {

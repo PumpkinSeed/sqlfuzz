@@ -135,6 +135,43 @@ func TestFuzzPostgres(t *testing.T) {
 	}
 }
 
+func TestPostgresMultiInsert(t *testing.T) {
+	f := flags.Flags{}
+	f.Driver = drivers.Flags{
+		Username: "test",
+		Password: "test",
+		Database: "test",
+		Host:     "localhost",
+		Port:     "5432",
+		Driver:   "postgres",
+	}
+	f.Table = "Persons"
+	f.Parsed = true
+	f.Num = 10
+	f.Workers = 2
+
+	gofakeit.Seed(0)
+	driver := drivers.New(f.Driver)
+	testable := drivers.NewTestable(f.Driver)
+	db := connector.Connection(driver)
+	defer db.Close()
+	if _, err := db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s", f.Table)); err != nil {
+		t.Fatal(err)
+	}
+	if err := testable.TestTable(db, f.Table); err != nil {
+		t.Fatal(err)
+	}
+	tables := []string{"t_currency", "t_location", "t_product", "t_product_desc", "t_product_stock"}
+	tableFieldMap, insertionOrder, err := driver.MultiDescribe(tables, db)
+	if err != nil {
+		t.Errorf("Error describing tables %v. Error %v", tables, err)
+	}
+	err = fuzzer.RunMulti(tableFieldMap, insertionOrder, f)
+	if err != nil {
+		t.Errorf("error during multi insert %v", err.Error())
+	}
+}
+
 type testTable struct {
 	id        int
 	firstname string

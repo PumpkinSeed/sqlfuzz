@@ -3,6 +3,7 @@ package connector
 import (
 	"database/sql"
 	"log"
+	"time"
 
 	"github.com/PumpkinSeed/sqlfuzz/drivers"
 	_ "github.com/lib/pq"
@@ -15,7 +16,9 @@ func Connection(d drivers.Driver) *sql.DB {
 		log.Fatal(err)
 		return nil
 	}
-
+	db.SetConnMaxLifetime(100 * time.Second)
+	db.SetMaxIdleConns(1000)
+	db.SetMaxOpenConns(200)
 	return db
 }
 

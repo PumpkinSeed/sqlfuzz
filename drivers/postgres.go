@@ -3,6 +3,7 @@ package drivers
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -69,6 +70,23 @@ const (
 	PSQLConnectionTemplate = "host=%s port=%s user=%s password=%s dbname=%s sslmode=disable"
 	PSQLInsertTemplate     = `INSERT INTO %s("%s") VALUES(%s)`
 	PSQLShowTablesQuery    = "SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema';"
+	psqlForeignKeysQuery   = `
+	SELECT
+    tc.constraint_name, 
+    tc.table_name, 
+    kcu.column_name, 
+    ccu.table_name AS foreign_table_name,
+    ccu.column_name AS foreign_column_name 
+FROM 
+    information_schema.table_constraints AS tc 
+    JOIN information_schema.key_column_usage AS kcu
+      ON tc.constraint_name = kcu.constraint_name
+      AND tc.table_schema = kcu.table_schema
+    JOIN information_schema.constraint_column_usage AS ccu
+      ON ccu.constraint_name = tc.constraint_name
+      AND ccu.table_schema = tc.table_schema
+WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_name='%s'
+	`
 )
 
 type Postgres struct {
@@ -140,12 +158,103 @@ func (p Postgres) MapField(descriptor FieldDescriptor) Field {
 	return field
 }
 
+func getInsertionOrder(tablesToFieldsMap map[string][]FieldDescriptor) ([]string, error) {
+	var tablesVisitOrder []string
+	tablesVisited := make(map[string]bool)
+	for len(tablesVisitOrder) < len(tablesToFieldsMap) {
+		newInsertCount := 0
+		for table, fields := range tablesToFieldsMap {
+			if _, ok := tablesVisited[table]; ok {
+				continue
+			}
+			canInsert := true
+			for _, field := range fields {
+				if field.ForeignKeyDescriptor == nil {
+					continue
+				}
+				if _, ok := tablesVisited[field.ForeignKeyDescriptor.ForeignTableName]; ok {
+					continue
+				}
+				// Necessary table is not yet visited.
+				canInsert = false
+				break
+			}
+			if canInsert {
+				newInsertCount++
+				tablesVisited[table] = true
+				tablesVisitOrder = append(tablesVisitOrder, table)
+			}
+		}
+		if newInsertCount == 0 {
+			break
+		}
+	}
+	if len(tablesVisitOrder) < len(tablesToFieldsMap) {
+		return nil, errors.New("error generating insertion order. Maybe necessary dependencies are not met")
+	}
+	return tablesVisitOrder, nil
+}
+
+func (p Postgres) multiDescribeHelper(tables []string, processedTables map[string]bool, db *sql.DB) (map[string][]FieldDescriptor, []string, error) {
+	knownTables := make(map[string]bool)
+	tableDescriptorMap := make(map[string][]FieldDescriptor)
+	var newlyReferencedTables []string
+	for _, table := range tables {
+		knownTables[table] = true
+	}
+	for _, table := range tables {
+		fields, err := p.DescribeFields(table, db)
+		if err != nil {
+			return nil, nil, err
+		}
+		for _, field := range fields {
+			if field.ForeignKeyDescriptor == nil {
+				continue
+			}
+			foreignTableName := field.ForeignKeyDescriptor.ForeignTableName
+			if !knownTables[foreignTableName] && !processedTables[foreignTableName] {
+				newlyReferencedTables = append(newlyReferencedTables, foreignTableName)
+				knownTables[foreignTableName] = true
+			}
+		}
+		tableDescriptorMap[table] = fields
+	}
+	return tableDescriptorMap, newlyReferencedTables, nil
+}
+
+func (p Postgres) MultiDescribe(tables []string, db *sql.DB) (map[string][]FieldDescriptor, []string, error) {
+	processedTables := make(map[string]bool)
+	tableToDescriptorMap := make(map[string][]FieldDescriptor)
+	for {
+		newTableToDescriptorMap, newlyReferencedTables, err := p.multiDescribeHelper(tables, processedTables, db)
+		if err != nil {
+			return nil, nil, err
+		}
+		for key, val := range newTableToDescriptorMap {
+			tableToDescriptorMap[key] = val
+		}
+		if len(newlyReferencedTables) == 0 {
+			break
+		}
+		tables = newlyReferencedTables
+	}
+	insertionOrder, err := getInsertionOrder(tableToDescriptorMap)
+	if err != nil {
+		return nil, nil, err
+	}
+	return tableToDescriptorMap, insertionOrder, nil
+}
+
 func (p Postgres) DescribeFields(table string, db *sql.DB) ([]FieldDescriptor, error) {
 	results, err := db.Query(fmt.Sprintf(PSQLDescribeTemplate, strings.ToLower(table)))
 	if err != nil {
 		return nil, err
 	}
-	return parsePostgresFields(results)
+	fkResults, err := db.Query(fmt.Sprintf(psqlForeignKeysQuery, strings.ToLower(table)))
+	if err != nil {
+		return nil, err
+	}
+	return parsePostgresFields(results, fkResults)
 }
 
 // TestTable only for test purposes
@@ -159,17 +268,37 @@ func (p Postgres) TestTable(db *sql.DB, table string) error {
 	if err != nil {
 		return err
 	}
+	tableCreateCommandMap, tables := getMultiTableCreateCommandMapPostgres()
+	for _, table := range tables {
+		createCommand := tableCreateCommandMap[table]
+		_, err := db.Query(strings.TrimSpace(createCommand))
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
-func parsePostgresFields(rows *sql.Rows) ([]FieldDescriptor, error) {
+func parsePostgresFields(rows *sql.Rows, fkRows *sql.Rows) ([]FieldDescriptor, error) {
 	var tableFields []FieldDescriptor
+	columnToFKMap := make(map[string]FKDescriptor)
+	for fkRows.Next() {
+		var fk FKDescriptor
+		err := fkRows.Scan(&fk.ConstraintName, &fk.TableName, &fk.ColumnName, &fk.ForeignTableName, &fk.ForeignColumnName)
+		if err != nil {
+			return nil, err
+		}
+		columnToFKMap[fk.ColumnName] = fk
+	}
 	for rows.Next() {
 		var field FieldDescriptor
 		err := rows.Scan(&field.Field, &field.Type, &field.Length, &field.Default, &field.Null, &field.Precision, &field.Scale)
 		field.HasDefaultValue = field.Default.Valid && len(field.Default.String) > 0
 		if err != nil {
 			return nil, err
+		}
+		if val, ok := columnToFKMap[field.Field]; ok {
+			field.ForeignKeyDescriptor = &val
 		}
 		tableFields = append(tableFields, field)
 	}
@@ -182,4 +311,52 @@ func pgValPlaceholder(fieldLen int) string {
 		q = append(q, fmt.Sprintf("$%d", i))
 	}
 	return strings.Join(q, ",")
+}
+
+func getMultiTableCreateCommandMapPostgres() (map[string]string, []string) {
+	tableToCreateCommandMap := make(map[string]string)
+	tableCreationOrder := []string{"t_currency", "t_location", "t_product", "t_product_desc", "t_product_stock"}
+	tableToCreateCommandMap["t_currency"] = `
+	CREATE TABLE IF NOT EXISTS "t_currency"
+	(
+		id      int not null,
+		shortcut    char (3) not null,
+		PRIMARY KEY (id)
+	);
+	`
+	tableToCreateCommandMap["t_location"] = `
+	CREATE TABLE IF NOT EXISTS "t_location"
+	(
+		id      int not null,
+		location_name   text not null,
+		PRIMARY KEY (id)
+	);
+	`
+	tableToCreateCommandMap["t_product"] = `
+	CREATE TABLE IF NOT EXISTS "t_product"
+	(
+		id      int not null,
+		name        text not null,
+		currency_id int REFERENCES t_currency (id) not null,
+		PRIMARY KEY (id)
+	);
+	`
+	tableToCreateCommandMap["t_product_desc"] = `
+	CREATE TABLE IF NOT EXISTS "t_product_desc"
+	(
+		id      int not null,
+		product_id  int REFERENCES t_product (id) not null,
+		description text not null,
+		PRIMARY KEY (id) 
+	);
+	`
+	tableToCreateCommandMap["t_product_stock"] = `
+	CREATE TABLE IF NOT EXISTS "t_product_stock"
+	(
+		product_id  int REFERENCES t_product (id) not null,
+		location_id int REFERENCES t_location (id) not null,
+		amount      numeric not null
+	);
+	`
+	return tableToCreateCommandMap, tableCreationOrder
 }
