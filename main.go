@@ -31,7 +31,7 @@ func main() {
 	}
 	for _, table := range tables {
 		f.Table = table
-		fields, err := driver.DescribeFields(f.Table, db)
+		fields, err := driver.Describe(f.Table, db)
 		if err != nil {
 			log.Fatal(err.Error())
 		}

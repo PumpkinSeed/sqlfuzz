@@ -6,7 +6,7 @@ import (
 	"log"
 )
 
-func getConnection() (*sql.DB, error) {
+func getPostgresConnection() (*sql.DB, error) {
 	connectionString := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable ", "127.0.0.1", "5432", "test", "test", "test")
 	db, err := sql.Open("postgres", connectionString)
 	if err != nil {
@@ -16,7 +16,7 @@ func getConnection() (*sql.DB, error) {
 }
 
 func createTable() {
-	db, err := getConnection()
+	db, err := getPostgresConnection()
 	if err != nil {
 		return
 	}
@@ -25,7 +25,7 @@ func createTable() {
 
 func ExamplePostgres_ShowTables() {
 	createTable()
-	db, err := getConnection()
+	db, err := getPostgresConnection()
 	if err != nil {
 		return
 	}
@@ -42,12 +42,12 @@ func ExamplePostgres_ShowTables() {
 
 func ExamplePostgres_DescribeFields() {
 	createTable()
-	db, err := getConnection()
+	db, err := getPostgresConnection()
 	if err != nil {
 		return
 	}
 	driver := Postgres{}
-	fields, err := driver.DescribeFields("pg_data_types", db)
+	fields, err := driver.Describe("pg_data_types", db)
 	if err != nil {
 		log.Printf("Error describing table : %s", err.Error())
 		return

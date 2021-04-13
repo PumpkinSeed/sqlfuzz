@@ -41,7 +41,7 @@ func InsertMulti(args ...interface{}) error {
 							continue
 						}
 					}
-					val, err := getLatestColumnValue(field.ForeignKeyDescriptor.ForeignTableName, field.ForeignKeyDescriptor.ForeignColumnName, db)
+					val, err := driver.GetLatestColumnValue(field.ForeignKeyDescriptor.ForeignTableName, field.ForeignKeyDescriptor.ForeignColumnName, db)
 					if err != nil {
 						return err
 					}
@@ -60,19 +60,6 @@ func InsertMulti(args ...interface{}) error {
 		}
 	}
 	return nil
-}
-
-func getLatestColumnValue(table, column string, db *sql.DB) (interface{}, error) {
-	query := fmt.Sprintf("select %v from %v order by %v desc limit 1", column, table, column)
-	rows, err := db.Query(query)
-	if err != nil {
-		return nil, err
-	}
-	var val interface{}
-	for rows.Next() {
-		rows.Scan(&val)
-	}
-	return val, nil
 }
 
 // Insert is inserting a random generated data into the chosen table

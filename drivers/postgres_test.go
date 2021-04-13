@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"strings"
 	"testing"
 
 	_ "github.com/lib/pq"
@@ -45,18 +44,21 @@ func TestPostgres_MapField(t *testing.T) {
 }
 
 func TestPostgres_MultiDescribe(t *testing.T) {
-	db, err := getConnection()
+	db, err := getPostgresConnection()
+	pgDriver := Postgres{}
+
 	if err != nil {
 		t.Errorf("error getting postgres connection : %v", err.Error())
 	}
-	tableCreateCommandMap, tables := getMultiTableCreateCommandMapPostgres()
-	for _, table := range tables {
-		createCommand := tableCreateCommandMap[table]
-		_, err := db.Query(strings.TrimSpace(createCommand))
-		if err != nil {
-			t.Errorf("error creating table %v", err.Error())
-		}
+	testCase, err := pgDriver.GetTestCase("multi")
+	if err != nil {
+		t.Errorf("error getting multi test case : %v", err.Error())
 	}
+	err = pgDriver.TestTable(db, "multi", "")
+	if err != nil {
+		t.Errorf("error initialising multi test case : %v", err.Error())
+	}
+	tables := testCase.TableCreationOrder
 	tableFieldsMap, insertionOrder, err := Postgres{}.MultiDescribe(tables, db)
 	if err != nil {
 		t.Errorf("error descriving tables %v. Error : %v", tables, err)

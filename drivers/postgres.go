@@ -1,7 +1,6 @@
 package drivers
 
 import (
-	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -89,6 +88,56 @@ WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_name='%s'
 	`
 )
 
+var (
+	pgNameToTestCase = map[string]TestCase{
+		"single": {
+			TableToCreateQueryMap: map[string]string{"": CreateTable},
+			TableCreationOrder:    nil,
+		},
+		"multi": {
+			TableToCreateQueryMap: map[string]string{"t_currency": `CREATE TABLE IF NOT EXISTS "t_currency"
+	(
+		id      int not null,
+		shortcut    char (3) not null,
+		PRIMARY KEY (id)
+	);
+	`,
+				"t_location": `CREATE TABLE IF NOT EXISTS "t_location"
+	(
+		id      int not null,
+		location_name   text not null,
+		PRIMARY KEY (id)
+	);
+	`,
+				"t_product": `CREATE TABLE IF NOT EXISTS "t_product"
+	(
+		id      int not null,
+		name        text not null,
+		currency_id int REFERENCES t_currency (id) not null,
+		PRIMARY KEY (id)
+	);
+	`,
+				"t_product_desc": `CREATE TABLE IF NOT EXISTS "t_product_desc"
+	(
+		id      int not null,
+		product_id  int REFERENCES t_product (id) not null,
+		description text not null,
+		PRIMARY KEY (id)
+	);
+	`,
+				"t_product_stock": `CREATE TABLE IF NOT EXISTS "t_product_stock"
+	(
+		product_id  int REFERENCES t_product (id) not null,
+		location_id int REFERENCES t_location (id) not null,
+		amount      numeric not null
+	);
+	`,
+			},
+			TableCreationOrder: []string{"t_currency", "t_location", "t_product", "t_product_desc", "t_product_stock"},
+		},
+	}
+)
+
 type Postgres struct {
 	f Flags
 }
@@ -158,43 +207,6 @@ func (p Postgres) MapField(descriptor FieldDescriptor) Field {
 	return field
 }
 
-func getInsertionOrder(tablesToFieldsMap map[string][]FieldDescriptor) ([]string, error) {
-	var tablesVisitOrder []string
-	tablesVisited := make(map[string]bool)
-	for len(tablesVisitOrder) < len(tablesToFieldsMap) {
-		newInsertCount := 0
-		for table, fields := range tablesToFieldsMap {
-			if _, ok := tablesVisited[table]; ok {
-				continue
-			}
-			canInsert := true
-			for _, field := range fields {
-				if field.ForeignKeyDescriptor == nil {
-					continue
-				}
-				if _, ok := tablesVisited[field.ForeignKeyDescriptor.ForeignTableName]; ok {
-					continue
-				}
-				// Necessary table is not yet visited.
-				canInsert = false
-				break
-			}
-			if canInsert {
-				newInsertCount++
-				tablesVisited[table] = true
-				tablesVisitOrder = append(tablesVisitOrder, table)
-			}
-		}
-		if newInsertCount == 0 {
-			break
-		}
-	}
-	if len(tablesVisitOrder) < len(tablesToFieldsMap) {
-		return nil, errors.New("error generating insertion order. Maybe necessary dependencies are not met")
-	}
-	return tablesVisitOrder, nil
-}
-
 func (p Postgres) multiDescribeHelper(tables []string, processedTables map[string]bool, db *sql.DB) (map[string][]FieldDescriptor, []string, error) {
 	knownTables := make(map[string]bool)
 	tableDescriptorMap := make(map[string][]FieldDescriptor)
@@ -203,7 +215,7 @@ func (p Postgres) multiDescribeHelper(tables []string, processedTables map[strin
 		knownTables[table] = true
 	}
 	for _, table := range tables {
-		fields, err := p.DescribeFields(table, db)
+		fields, err := p.Describe(table, db)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -226,7 +238,7 @@ func (p Postgres) MultiDescribe(tables []string, db *sql.DB) (map[string][]Field
 	processedTables := make(map[string]bool)
 	tableToDescriptorMap := make(map[string][]FieldDescriptor)
 	for {
-		newTableToDescriptorMap, newlyReferencedTables, err := p.multiDescribeHelper(tables, processedTables, db)
+		newTableToDescriptorMap, newlyReferencedTables, err := multiDescribeHelper(tables, processedTables, db, p)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -245,7 +257,7 @@ func (p Postgres) MultiDescribe(tables []string, db *sql.DB) (map[string][]Field
 	return tableToDescriptorMap, insertionOrder, nil
 }
 
-func (p Postgres) DescribeFields(table string, db *sql.DB) ([]FieldDescriptor, error) {
+func (p Postgres) Describe(table string, db *sql.DB) ([]FieldDescriptor, error) {
 	results, err := db.Query(fmt.Sprintf(PSQLDescribeTemplate, strings.ToLower(table)))
 	if err != nil {
 		return nil, err
@@ -257,29 +269,32 @@ func (p Postgres) DescribeFields(table string, db *sql.DB) ([]FieldDescriptor, e
 	return parsePostgresFields(results, fkResults)
 }
 
-// TestTable only for test purposes
-func (p Postgres) TestTable(db *sql.DB, table string) error {
-	res, err := db.ExecContext(context.Background(), fmt.Sprintf(CreateTable, table))
+func (p Postgres) GetLatestColumnValue(table, column string, db *sql.DB) (interface{}, error) {
+	query := fmt.Sprintf("select %v from %v order by %v desc limit 1", column, table, column)
+	rows, err := db.Query(query)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	_, err = res.RowsAffected()
-	if err != nil {
-		return err
+	var val interface{}
+	for rows.Next() {
+		rows.Scan(&val)
 	}
-	tableCreateCommandMap, tables := getMultiTableCreateCommandMapPostgres()
-	for _, table := range tables {
-		createCommand := tableCreateCommandMap[table]
-		_, err := db.Query(strings.TrimSpace(createCommand))
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return val, nil
 }
 
-func parsePostgresFields(rows *sql.Rows, fkRows *sql.Rows) ([]FieldDescriptor, error) {
+// TestTable only for test purposes
+func (p Postgres) TestTable(db *sql.DB, testCase, table string) error {
+	return testTable(db, testCase, table, p)
+}
+
+func (Postgres) GetTestCase(name string) (TestCase, error) {
+	if val, ok := pgNameToTestCase[name]; ok {
+		return val, nil
+	}
+	return TestCase{}, errors.New(fmt.Sprintf("postgres: Error getting testcase with name %v", name))
+}
+
+func parsePostgresFields(rows, fkRows *sql.Rows) ([]FieldDescriptor, error) {
 	var tableFields []FieldDescriptor
 	columnToFKMap := make(map[string]FKDescriptor)
 	for fkRows.Next() {
@@ -311,52 +326,4 @@ func pgValPlaceholder(fieldLen int) string {
 		q = append(q, fmt.Sprintf("$%d", i))
 	}
 	return strings.Join(q, ",")
-}
-
-func getMultiTableCreateCommandMapPostgres() (map[string]string, []string) {
-	tableToCreateCommandMap := make(map[string]string)
-	tableCreationOrder := []string{"t_currency", "t_location", "t_product", "t_product_desc", "t_product_stock"}
-	tableToCreateCommandMap["t_currency"] = `
-	CREATE TABLE IF NOT EXISTS "t_currency"
-	(
-		id      int not null,
-		shortcut    char (3) not null,
-		PRIMARY KEY (id)
-	);
-	`
-	tableToCreateCommandMap["t_location"] = `
-	CREATE TABLE IF NOT EXISTS "t_location"
-	(
-		id      int not null,
-		location_name   text not null,
-		PRIMARY KEY (id)
-	);
-	`
-	tableToCreateCommandMap["t_product"] = `
-	CREATE TABLE IF NOT EXISTS "t_product"
-	(
-		id      int not null,
-		name        text not null,
-		currency_id int REFERENCES t_currency (id) not null,
-		PRIMARY KEY (id)
-	);
-	`
-	tableToCreateCommandMap["t_product_desc"] = `
-	CREATE TABLE IF NOT EXISTS "t_product_desc"
-	(
-		id      int not null,
-		product_id  int REFERENCES t_product (id) not null,
-		description text not null,
-		PRIMARY KEY (id) 
-	);
-	`
-	tableToCreateCommandMap["t_product_stock"] = `
-	CREATE TABLE IF NOT EXISTS "t_product_stock"
-	(
-		product_id  int REFERENCES t_product (id) not null,
-		location_id int REFERENCES t_location (id) not null,
-		amount      numeric not null
-	);
-	`
-	return tableToCreateCommandMap, tableCreationOrder
 }
