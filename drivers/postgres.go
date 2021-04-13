@@ -207,33 +207,6 @@ func (p Postgres) MapField(descriptor FieldDescriptor) Field {
 	return field
 }
 
-func (p Postgres) multiDescribeHelper(tables []string, processedTables map[string]bool, db *sql.DB) (map[string][]FieldDescriptor, []string, error) {
-	knownTables := make(map[string]bool)
-	tableDescriptorMap := make(map[string][]FieldDescriptor)
-	var newlyReferencedTables []string
-	for _, table := range tables {
-		knownTables[table] = true
-	}
-	for _, table := range tables {
-		fields, err := p.Describe(table, db)
-		if err != nil {
-			return nil, nil, err
-		}
-		for _, field := range fields {
-			if field.ForeignKeyDescriptor == nil {
-				continue
-			}
-			foreignTableName := field.ForeignKeyDescriptor.ForeignTableName
-			if !knownTables[foreignTableName] && !processedTables[foreignTableName] {
-				newlyReferencedTables = append(newlyReferencedTables, foreignTableName)
-				knownTables[foreignTableName] = true
-			}
-		}
-		tableDescriptorMap[table] = fields
-	}
-	return tableDescriptorMap, newlyReferencedTables, nil
-}
-
 func (p Postgres) MultiDescribe(tables []string, db *sql.DB) (map[string][]FieldDescriptor, []string, error) {
 	processedTables := make(map[string]bool)
 	tableToDescriptorMap := make(map[string][]FieldDescriptor)
