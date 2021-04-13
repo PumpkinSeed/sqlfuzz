@@ -42,7 +42,7 @@ func multiDescribeHelper(tables []string, processedTables map[string]struct{}, d
 
 func getInsertionOrder(tablesToFieldsMap map[string][]FieldDescriptor) ([]string, error) {
 	var tablesVisitOrder []string
-	tablesVisited := make(map[string]bool)
+	tablesVisited := make(map[string]struct{})
 	for len(tablesVisitOrder) < len(tablesToFieldsMap) {
 		newInsertCount := 0
 		for table, fields := range tablesToFieldsMap {
@@ -63,7 +63,7 @@ func getInsertionOrder(tablesToFieldsMap map[string][]FieldDescriptor) ([]string
 			}
 			if canInsert {
 				newInsertCount++
-				tablesVisited[table] = true
+				tablesVisited[table] = struct{}{}
 				tablesVisitOrder = append(tablesVisitOrder, table)
 			}
 		}
