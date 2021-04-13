@@ -48,20 +48,6 @@ func Run(fields []drivers.FieldDescriptor, f flags.Flags) error {
 		}
 	}()
 	return runHelper(f, action.Insert, []interface{}{db, fields, driver, f.Table})
-	//numJobs := f.Num
-	//workers := f.Workers
-	//jobs := make(chan struct{}, numJobs)
-	//wg := &sync.WaitGroup{}
-	//wg.Add(workers)
-	//for w := 0; w < workers; w++ {
-	//	go worker(jobs, fields, wg, f)
-	//}
-	//
-	//for j := 0; j < numJobs; j++ {
-	//	jobs <- struct{}{}
-	//}
-	//close(jobs)
-	//wg.Wait()
 }
 
 func RunMulti(tableToFieldsMap map[string][]drivers.FieldDescriptor, insertionOrder []string, f flags.Flags) error {

@@ -15,7 +15,7 @@ const (
 var (
 	mySQLNameToTestCase = map[string]TestCase{
 		"single": {
-			TableToCreateQueryMap: map[string]string{"": `CREATE TABLE %s (
+			TableToCreateQueryMap: map[string]string{DefaultTableCreateQueryKey: `CREATE TABLE %s (
 		id INT(6) UNSIGNED,
 		firstname VARCHAR(30),
 		lastname VARCHAR(30),
@@ -203,7 +203,7 @@ func (MySQL) Describe(table string, db *sql.DB) ([]FieldDescriptor, error) {
 }
 
 func (m MySQL) MultiDescribe(tables []string, db *sql.DB) (map[string][]FieldDescriptor, []string, error) {
-	processedTables := make(map[string]bool)
+	processedTables := make(map[string]struct{})
 	tableToDescriptorMap := make(map[string][]FieldDescriptor)
 	for {
 		newTableToDescriptorMap, newlyReferencedTables, err := multiDescribeHelper(tables, processedTables, db, m)

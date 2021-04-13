@@ -8,7 +8,11 @@ import (
 	"strings"
 )
 
-func multiDescribeHelper(tables []string, processedTables map[string]bool, db *sql.DB, d Driver) (map[string][]FieldDescriptor, []string, error) {
+const (
+	DefaultTableCreateQueryKey = ""
+)
+
+func multiDescribeHelper(tables []string, processedTables map[string]struct{}, db *sql.DB, d Driver) (map[string][]FieldDescriptor, []string, error) {
 	knownTables := make(map[string]bool)
 	tableDescriptorMap := make(map[string][]FieldDescriptor)
 	var newlyReferencedTables []string
@@ -25,12 +29,13 @@ func multiDescribeHelper(tables []string, processedTables map[string]bool, db *s
 				continue
 			}
 			foreignTableName := field.ForeignKeyDescriptor.ForeignTableName
-			if !knownTables[foreignTableName] && !processedTables[foreignTableName] {
+			if _, ok := processedTables[foreignTableName]; ok && !knownTables[foreignTableName] {
 				newlyReferencedTables = append(newlyReferencedTables, foreignTableName)
 				knownTables[foreignTableName] = true
 			}
 		}
 		tableDescriptorMap[table] = fields
+		processedTables[table] = struct{}{}
 	}
 	return tableDescriptorMap, newlyReferencedTables, nil
 }
@@ -63,11 +68,8 @@ func getInsertionOrder(tablesToFieldsMap map[string][]FieldDescriptor) ([]string
 			}
 		}
 		if newInsertCount == 0 {
-			break
+			return nil, errors.New("error generating insertion order. Maybe necessary dependencies are not met")
 		}
-	}
-	if len(tablesVisitOrder) < len(tablesToFieldsMap) {
-		return nil, errors.New("error generating insertion order. Maybe necessary dependencies are not met")
 	}
 	return tablesVisitOrder, nil
 }
@@ -78,7 +80,7 @@ func testTable(db *sql.DB, testCase, table string, d Driver) error {
 		return err
 	}
 	if test.TableCreationOrder == nil {
-		if query, ok := test.TableToCreateQueryMap[""]; ok {
+		if query, ok := test.TableToCreateQueryMap[DefaultTableCreateQueryKey]; ok {
 			if res, err := db.ExecContext(context.Background(), fmt.Sprintf(query, table)); err != nil {
 				return err
 			} else if _, err := res.RowsAffected(); err != nil {

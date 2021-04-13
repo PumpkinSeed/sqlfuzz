@@ -91,7 +91,7 @@ WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_name='%s'
 var (
 	pgNameToTestCase = map[string]TestCase{
 		"single": {
-			TableToCreateQueryMap: map[string]string{"": CreateTable},
+			TableToCreateQueryMap: map[string]string{DefaultTableCreateQueryKey: CreateTable},
 			TableCreationOrder:    nil,
 		},
 		"multi": {
@@ -208,7 +208,7 @@ func (p Postgres) MapField(descriptor FieldDescriptor) Field {
 }
 
 func (p Postgres) MultiDescribe(tables []string, db *sql.DB) (map[string][]FieldDescriptor, []string, error) {
-	processedTables := make(map[string]bool)
+	processedTables := make(map[string]struct{})
 	tableToDescriptorMap := make(map[string][]FieldDescriptor)
 	for {
 		newTableToDescriptorMap, newlyReferencedTables, err := multiDescribeHelper(tables, processedTables, db, p)
