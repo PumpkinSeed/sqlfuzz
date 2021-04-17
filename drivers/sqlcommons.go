@@ -74,7 +74,7 @@ func getInsertionOrder(tablesToFieldsMap map[string][]FieldDescriptor) ([]string
 	return tablesVisitOrder, nil
 }
 
-func testTable(db *sql.DB, testCase, table string, d Driver) error {
+func testTable(db *sql.DB, testCase, table string, d Testable) error {
 	test, err := d.GetTestCase(testCase)
 	if err != nil {
 		return err

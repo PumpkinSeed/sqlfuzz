@@ -3,6 +3,7 @@ package action
 import (
 	"database/sql"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"log"
 	"math"
@@ -17,15 +18,42 @@ import (
 	"github.com/rs/xid"
 )
 
-func InsertMulti(args ...interface{}) error {
-	db := args[0].(*sql.DB)
-	driver := args[1].(drivers.Driver)
-	tableToFieldsMap := args[2].(map[string][]drivers.FieldDescriptor)
-	insertionOrder := args[3].([]string)
-	//func InsertMulti(db *sql.DB, driver drivers.Driver, tableToFieldsMap map[string][]drivers.FieldDescriptor, insertionOrder []string) error {
+type SingleInsertParams struct {
+	DB     *sql.DB
+	Driver drivers.Driver
+	Table  string
+	Fields []drivers.FieldDescriptor
+}
+
+type MultiInsertParams struct {
+	DB               *sql.DB
+	Driver           drivers.Driver
+	InsertionOrder   []string
+	TableToFieldsMap map[string][]drivers.FieldDescriptor
+}
+
+type SQLInsertInput struct {
+	SingleInsertParams *SingleInsertParams
+	MultiInsertParams  *MultiInsertParams
+}
+
+func (sqlInsertInput SQLInsertInput) Insert() error {
+	if sqlInsertInput.SingleInsertParams != nil {
+		return sqlInsertInput.singleInsert()
+	} else if sqlInsertInput.MultiInsertParams != nil {
+		return sqlInsertInput.multiInsert()
+	}
+	return errors.New("action: error in sql insert input. Both single and multi insert arguments are not initialised")
+}
+
+func (sqlInsertInput SQLInsertInput) multiInsert() error {
+	multiInsertParams := sqlInsertInput.MultiInsertParams
+	if multiInsertParams == nil {
+		return errors.New("action : error during multi insert. Could not find necessary arguments")
+	}
 	tableFieldValuesMap := make(map[string]map[string]interface{})
-	for _, table := range insertionOrder {
-		if fields, ok := tableToFieldsMap[table]; ok {
+	for _, table := range multiInsertParams.InsertionOrder {
+		if fields, ok := multiInsertParams.TableToFieldsMap[table]; ok {
 			var f = make([]string, 0, len(fields))
 			var values []interface{}
 			for _, field := range fields {
@@ -41,19 +69,19 @@ func InsertMulti(args ...interface{}) error {
 							continue
 						}
 					}
-					val, err := driver.GetLatestColumnValue(field.ForeignKeyDescriptor.ForeignTableName, field.ForeignKeyDescriptor.ForeignColumnName, db)
+					val, err := multiInsertParams.Driver.GetLatestColumnValue(field.ForeignKeyDescriptor.ForeignTableName, field.ForeignKeyDescriptor.ForeignColumnName, multiInsertParams.DB)
 					if err != nil {
 						return err
 					}
 					data = val
 					// Get from table. If no value present in table as well, throw error.
 				} else {
-					data = generateData(driver, field)
+					data = generateData(multiInsertParams.Driver, field)
 				}
 				values = append(values, data)
 			}
-			query := driver.Insert(f, table)
-			_, err := db.Exec(query, values...)
+			query := multiInsertParams.Driver.Insert(f, table)
+			_, err := multiInsertParams.DB.Exec(query, values...)
 			if err != nil {
 				return err
 			}
@@ -62,26 +90,25 @@ func InsertMulti(args ...interface{}) error {
 	return nil
 }
 
-// Insert is inserting a random generated data into the chosen table
-func Insert(args ...interface{}) error {
-	//func Insert(db *sql.DB, fields []drivers.FieldDescriptor, driver drivers.Driver, table string) error {
-	db := args[0].(*sql.DB)
-	fields := args[1].([]drivers.FieldDescriptor)
-	driver := args[2].(drivers.Driver)
-	table := args[3].(string)
-	var f = make([]string, 0, len(fields))
-	var values = make([]interface{}, 0, len(fields))
-	for _, field := range fields {
+// singleInsert is inserting a random generated data into the chosen table
+func (sqlInsertInput SQLInsertInput) singleInsert() error {
+	insertParams := sqlInsertInput.SingleInsertParams
+	if insertParams == nil {
+		return errors.New("action : error during insert. Could not find necessary arguments")
+	}
+	var f = make([]string, 0, len(insertParams.Fields))
+	var values = make([]interface{}, 0, len(insertParams.Fields))
+	for _, field := range insertParams.Fields {
 		// Has default value. No need to insert this field manually.
 		if field.HasDefaultValue {
 			continue
 		}
 		f = append(f, field.Field)
-		values = append(values, generateData(driver, field))
+		values = append(values, generateData(insertParams.Driver, field))
 	}
-	query := driver.Insert(f, table)
+	query := insertParams.Driver.Insert(f, insertParams.Table)
 
-	_, err := db.Exec(query, values...)
+	_, err := insertParams.DB.Exec(query, values...)
 	return err
 }
 
@@ -128,7 +155,7 @@ func generateData(driver drivers.Driver, fieldDescriptor drivers.FieldDescriptor
 		)
 	case drivers.Time:
 		return time.Date(
-			gofakeit.Number(1970, 2038),
+			gofakeit.Number(1980, 2028),
 			time.Month(gofakeit.Number(0, 12)),
 			gofakeit.Day(),
 			gofakeit.Hour(),

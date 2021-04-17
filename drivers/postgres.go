@@ -243,7 +243,7 @@ func (p Postgres) Describe(table string, db *sql.DB) ([]FieldDescriptor, error) 
 }
 
 func (p Postgres) GetLatestColumnValue(table, column string, db *sql.DB) (interface{}, error) {
-	query := fmt.Sprintf("select %v from %v order by %v desc limit 1", column, table, column)
+	query := fmt.Sprintf("select %s from %s order by %s desc limit 1", column, table, column)
 	rows, err := db.Query(query)
 	if err != nil {
 		return nil, err

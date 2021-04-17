@@ -83,10 +83,10 @@ type Driver interface {
 	Describe(table string, db *sql.DB) ([]FieldDescriptor, error)
 	MultiDescribe(tables []string, db *sql.DB) (map[string][]FieldDescriptor, []string, error)
 	GetLatestColumnValue(table, column string, db *sql.DB) (interface{}, error)
-	GetTestCase(name string) (TestCase, error)
 }
 
 type Testable interface {
+	GetTestCase(name string) (TestCase, error)
 	TestTable(conn *sql.DB, testCase, table string) error
 }
 

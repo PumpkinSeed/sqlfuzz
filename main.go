@@ -16,7 +16,7 @@ func main() {
 	f := flags.Get()
 	gofakeit.Seed(0)
 	driver := drivers.New(f.Driver)
-	db := connector.Connection(driver)
+	db := connector.Connection(driver, f)
 	defer db.Close()
 
 	var tables []string
