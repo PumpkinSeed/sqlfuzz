@@ -15,8 +15,6 @@ import (
 func getDriverAndDB(f flags.Flags) (drivers.Driver, *sql.DB) {
 	driver := drivers.New(f.Driver)
 	db := connector.Connection(driver, f)
-	db.SetMaxOpenConns(f.Workers)
-	db.SetMaxIdleConns(f.Workers)
 	return driver, db
 }
 
