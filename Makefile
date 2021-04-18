@@ -1,7 +1,9 @@
 GOFILES := $(shell find . -name "*.go" -type f ! -path "./vendor/*")
 GOFMT ?= gofmt -s
 
-.PHONY: all
+PACKAGES = $(shell go list ./... | grep -v /vendor/)
+
+.PHONY: all test
 all: slqfuzz_darwin_amd64 slqfuzz_windows_amd64 slqfuzz_linux_amd64 slqfuzz_linux_arm64
 
 slqfuzz_darwin_amd64:
@@ -25,3 +27,6 @@ clean:
 
 fmt:
 	@$(GOFMT) -w ${GOFILES}
+
+test:
+	@go test -v -coverprofile cover.out ${PACKAGES}

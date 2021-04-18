@@ -1,6 +1,8 @@
 package drivers
 
 import (
+	"encoding/json"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -39,4 +41,34 @@ func TestPostgres_MapField(t *testing.T) {
 			t.Errorf("Invalid output for %s, out: %+v", scenario.input.Field, output)
 		}
 	}
+}
+
+func TestPostgres_MultiDescribe(t *testing.T) {
+	db, err := getPostgresConnection()
+	pgDriver := Postgres{}
+
+	if err != nil {
+		t.Errorf("error getting postgres connection : %v", err.Error())
+	}
+	testCase, err := pgDriver.GetTestCase("multi")
+	if err != nil {
+		t.Errorf("error getting multi test case : %v", err.Error())
+	}
+	err = pgDriver.TestTable(db, "multi", "")
+	if err != nil {
+		t.Errorf("error initialising multi test case : %v", err.Error())
+	}
+	tables := testCase.TableCreationOrder
+	tableFieldsMap, insertionOrder, err := Postgres{}.MultiDescribe(tables, db)
+	if err != nil {
+		t.Errorf("error descriving tables %v. Error : %v", tables, err)
+	}
+	if len(tableFieldsMap) == 0 || len(insertionOrder) != len(tableFieldsMap) || len(insertionOrder) != len(tables) {
+		t.Errorf("error receiving required fields count. input len %v described fields len %v insertion order length %v", len(tables), len(tableFieldsMap), len(insertionOrder))
+	}
+	tableFieldMapStr, err := json.Marshal(tableFieldsMap)
+	if err != nil {
+		t.Error(err)
+	}
+	fmt.Println(string(tableFieldMapStr))
 }

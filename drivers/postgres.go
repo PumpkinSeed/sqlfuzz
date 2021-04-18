@@ -1,8 +1,8 @@
 package drivers
 
 import (
-	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -69,6 +69,73 @@ const (
 	PSQLConnectionTemplate = "host=%s port=%s user=%s password=%s dbname=%s sslmode=disable"
 	PSQLInsertTemplate     = `INSERT INTO %s("%s") VALUES(%s)`
 	PSQLShowTablesQuery    = "SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema';"
+	psqlForeignKeysQuery   = `
+	SELECT
+    tc.constraint_name, 
+    tc.table_name, 
+    kcu.column_name, 
+    ccu.table_name AS foreign_table_name,
+    ccu.column_name AS foreign_column_name 
+FROM 
+    information_schema.table_constraints AS tc 
+    JOIN information_schema.key_column_usage AS kcu
+      ON tc.constraint_name = kcu.constraint_name
+      AND tc.table_schema = kcu.table_schema
+    JOIN information_schema.constraint_column_usage AS ccu
+      ON ccu.constraint_name = tc.constraint_name
+      AND ccu.table_schema = tc.table_schema
+WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_name='%s'
+	`
+)
+
+var (
+	pgNameToTestCase = map[string]TestCase{
+		"single": {
+			TableToCreateQueryMap: map[string]string{DefaultTableCreateQueryKey: CreateTable},
+			TableCreationOrder:    nil,
+		},
+		"multi": {
+			TableToCreateQueryMap: map[string]string{"t_currency": `CREATE TABLE IF NOT EXISTS "t_currency"
+	(
+		id      int not null,
+		shortcut    char (3) not null,
+		PRIMARY KEY (id)
+	);
+	`,
+				"t_location": `CREATE TABLE IF NOT EXISTS "t_location"
+	(
+		id      int not null,
+		location_name   text not null,
+		PRIMARY KEY (id)
+	);
+	`,
+				"t_product": `CREATE TABLE IF NOT EXISTS "t_product"
+	(
+		id      int not null,
+		name        text not null,
+		currency_id int REFERENCES t_currency (id) not null,
+		PRIMARY KEY (id)
+	);
+	`,
+				"t_product_desc": `CREATE TABLE IF NOT EXISTS "t_product_desc"
+	(
+		id      int not null,
+		product_id  int REFERENCES t_product (id) not null,
+		description text not null,
+		PRIMARY KEY (id)
+	);
+	`,
+				"t_product_stock": `CREATE TABLE IF NOT EXISTS "t_product_stock"
+	(
+		product_id  int REFERENCES t_product (id) not null,
+		location_id int REFERENCES t_location (id) not null,
+		amount      numeric not null
+	);
+	`,
+			},
+			TableCreationOrder: []string{"t_currency", "t_location", "t_product", "t_product_desc", "t_product_stock"},
+		},
+	}
 )
 
 type Postgres struct {
@@ -140,36 +207,86 @@ func (p Postgres) MapField(descriptor FieldDescriptor) Field {
 	return field
 }
 
-func (p Postgres) DescribeFields(table string, db *sql.DB) ([]FieldDescriptor, error) {
+func (p Postgres) MultiDescribe(tables []string, db *sql.DB) (map[string][]FieldDescriptor, []string, error) {
+	processedTables := make(map[string]struct{})
+	tableToDescriptorMap := make(map[string][]FieldDescriptor)
+	for {
+		newTableToDescriptorMap, newlyReferencedTables, err := multiDescribeHelper(tables, processedTables, db, p)
+		if err != nil {
+			return nil, nil, err
+		}
+		for key, val := range newTableToDescriptorMap {
+			tableToDescriptorMap[key] = val
+		}
+		if len(newlyReferencedTables) == 0 {
+			break
+		}
+		tables = newlyReferencedTables
+	}
+	insertionOrder, err := getInsertionOrder(tableToDescriptorMap)
+	if err != nil {
+		return nil, nil, err
+	}
+	return tableToDescriptorMap, insertionOrder, nil
+}
+
+func (p Postgres) Describe(table string, db *sql.DB) ([]FieldDescriptor, error) {
 	results, err := db.Query(fmt.Sprintf(PSQLDescribeTemplate, strings.ToLower(table)))
 	if err != nil {
 		return nil, err
 	}
-	return parsePostgresFields(results)
+	fkResults, err := db.Query(fmt.Sprintf(psqlForeignKeysQuery, strings.ToLower(table)))
+	if err != nil {
+		return nil, err
+	}
+	return parsePostgresFields(results, fkResults)
+}
+
+func (p Postgres) GetLatestColumnValue(table, column string, db *sql.DB) (interface{}, error) {
+	query := fmt.Sprintf("select %s from %s order by %s desc limit 1", column, table, column)
+	rows, err := db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	var val interface{}
+	for rows.Next() {
+		rows.Scan(&val)
+	}
+	return val, nil
 }
 
 // TestTable only for test purposes
-func (p Postgres) TestTable(db *sql.DB, table string) error {
-	res, err := db.ExecContext(context.Background(), fmt.Sprintf(CreateTable, table))
-	if err != nil {
-		return err
-	}
-
-	_, err = res.RowsAffected()
-	if err != nil {
-		return err
-	}
-	return nil
+func (p Postgres) TestTable(db *sql.DB, testCase, table string) error {
+	return testTable(db, testCase, table, p)
 }
 
-func parsePostgresFields(rows *sql.Rows) ([]FieldDescriptor, error) {
+func (Postgres) GetTestCase(name string) (TestCase, error) {
+	if val, ok := pgNameToTestCase[name]; ok {
+		return val, nil
+	}
+	return TestCase{}, errors.New(fmt.Sprintf("postgres: Error getting testcase with name %v", name))
+}
+
+func parsePostgresFields(rows, fkRows *sql.Rows) ([]FieldDescriptor, error) {
 	var tableFields []FieldDescriptor
+	columnToFKMap := make(map[string]FKDescriptor)
+	for fkRows.Next() {
+		var fk FKDescriptor
+		err := fkRows.Scan(&fk.ConstraintName, &fk.TableName, &fk.ColumnName, &fk.ForeignTableName, &fk.ForeignColumnName)
+		if err != nil {
+			return nil, err
+		}
+		columnToFKMap[fk.ColumnName] = fk
+	}
 	for rows.Next() {
 		var field FieldDescriptor
 		err := rows.Scan(&field.Field, &field.Type, &field.Length, &field.Default, &field.Null, &field.Precision, &field.Scale)
 		field.HasDefaultValue = field.Default.Valid && len(field.Default.String) > 0
 		if err != nil {
 			return nil, err
+		}
+		if val, ok := columnToFKMap[field.Field]; ok {
+			field.ForeignKeyDescriptor = &val
 		}
 		tableFields = append(tableFields, field)
 	}

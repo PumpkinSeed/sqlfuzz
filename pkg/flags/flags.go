@@ -2,8 +2,8 @@ package flags
 
 import (
 	"flag"
-
 	"github.com/PumpkinSeed/sqlfuzz/drivers"
+	"time"
 )
 
 var f Flags
@@ -15,7 +15,12 @@ type Flags struct {
 	Num     int
 	Workers int
 	Table   string
-	Parsed  bool
+
+	ConnMaxLifetimeInSec time.Duration
+	MaxIdleConns         int
+	MaxOpenConns         int
+
+	Parsed bool
 }
 
 // Get the parsed flags and parsing them if needed
@@ -39,6 +44,9 @@ func parse() {
 		flag.StringVar(&f.Table, "t", "", "Table for fuzzing")
 		flag.IntVar(&f.Num, "n", 1000, "Number of rows")
 		flag.IntVar(&f.Workers, "w", 20, "Number of workers")
+		flag.IntVar(&f.MaxIdleConns, "i", 200, "Number of max sql db idle connections")
+		flag.IntVar(&f.MaxOpenConns, "o", 1000, "Number of max sql db open connections")
+		flag.DurationVar(&f.ConnMaxLifetimeInSec, "l", 100*time.Second, "Maximum lifetime of each open connection")
 		flag.Parse()
 	}
 

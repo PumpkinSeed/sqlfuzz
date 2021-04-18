@@ -29,15 +29,15 @@ func TestFuzz(t *testing.T) {
 	gofakeit.Seed(0)
 	driver := drivers.New(f.Driver)
 	testable := drivers.NewTestable(f.Driver)
-	db := connector.Connection(driver)
+	db := connector.Connection(driver, f)
 	defer db.Close()
 	if _, err := db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s", f.Table)); err != nil {
 		t.Fatal(err)
 	}
-	if err := testable.TestTable(db, f.Table); err != nil {
+	if err := testable.TestTable(db, "single", f.Table); err != nil {
 		t.Fatal(err)
 	}
-	fields, err := driver.DescribeFields(f.Table, db)
+	fields, err := driver.Describe(f.Table, db)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -86,15 +86,15 @@ func TestFuzzPostgres(t *testing.T) {
 	gofakeit.Seed(0)
 	driver := drivers.New(f.Driver)
 	testable := drivers.NewTestable(f.Driver)
-	db := connector.Connection(driver)
+	db := connector.Connection(driver, f)
 	defer db.Close()
 	if _, err := db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s", f.Table)); err != nil {
 		t.Fatal(err)
 	}
-	if err := testable.TestTable(db, f.Table); err != nil {
+	if err := testable.TestTable(db, "single", f.Table); err != nil {
 		t.Fatal(err)
 	}
-	fields, err := driver.DescribeFields(f.Table, db)
+	fields, err := driver.Describe(f.Table, db)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -132,6 +132,88 @@ func TestFuzzPostgres(t *testing.T) {
 	}
 	if i == 0 {
 		t.Error("the table should not be empty")
+	}
+}
+
+func TestMysqlMultiInsert(t *testing.T) {
+	f := flags.Flags{}
+	f.Driver = drivers.Flags{
+		Username: "test",
+		Password: "test",
+		Database: "test",
+		Host:     "localhost",
+		Port:     "3306",
+		Driver:   "mysql",
+	}
+	f.Table = "Persons"
+	f.Parsed = true
+	f.Num = 10
+	f.Workers = 2
+
+	gofakeit.Seed(0)
+	driver := drivers.New(f.Driver)
+	testable := drivers.NewTestable(f.Driver)
+	test, err := testable.GetTestCase("multi")
+	if err != nil {
+		t.Error(fmt.Sprintf("postgres : error fetching test case for multi. %v", err.Error()))
+	}
+	db := connector.Connection(driver, f)
+	defer db.Close()
+	if _, err := db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s", f.Table)); err != nil {
+		t.Fatal(err)
+	}
+	if err := testable.TestTable(db, "multi", f.Table); err != nil {
+		t.Fatal(err)
+	}
+	tables := test.TableCreationOrder
+	tableFieldMap, insertionOrder, err := driver.MultiDescribe(tables, db)
+	if err != nil {
+		t.Errorf("Error describing tables %v. Error %v", tables, err)
+	}
+	err = fuzzer.RunMulti(tableFieldMap, insertionOrder, f)
+	if err != nil {
+		t.Errorf("error during multi insert %v", err.Error())
+	}
+}
+
+func TestPostgresMultiInsert(t *testing.T) {
+	f := flags.Flags{}
+	f.Driver = drivers.Flags{
+		Username: "test",
+		Password: "test",
+		Database: "test",
+		Host:     "localhost",
+		Port:     "5432",
+		Driver:   "postgres",
+	}
+	f.Table = "Persons"
+	f.Parsed = true
+	f.Num = 10
+	f.Workers = 2
+
+	gofakeit.Seed(0)
+	driver := drivers.New(f.Driver)
+	testable := drivers.NewTestable(f.Driver)
+	test, err := testable.GetTestCase("multi")
+	if err != nil {
+		t.Error(fmt.Sprintf("postgres : error fetching test case for multi. %v", err.Error()))
+	}
+	db := connector.Connection(driver, f)
+	defer db.Close()
+	if _, err := db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s", f.Table)); err != nil {
+		t.Fatal(err)
+	}
+	if err := testable.TestTable(db, "multi", f.Table); err != nil {
+		t.Fatal(err)
+	}
+	tables := test.TableCreationOrder
+	tableFieldMap, insertionOrder, err := driver.MultiDescribe(tables, db)
+	if err != nil {
+		t.Errorf("Error describing tables %v. Error %v", tables, err)
+	}
+	err = fuzzer.RunMulti(tableFieldMap, insertionOrder, f)
+	if err != nil {
+		t.Errorf("error during multi insert %v", err.Error())
 	}
 }
 
