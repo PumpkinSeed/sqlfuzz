@@ -19,6 +19,7 @@ type Flags struct {
 	ConnMaxLifetimeInSec time.Duration
 	MaxIdleConns         int
 	MaxOpenConns         int
+	Seed                 int
 
 	Parsed bool
 }
@@ -46,6 +47,7 @@ func parse() {
 		flag.IntVar(&f.Workers, "w", 20, "Number of workers")
 		flag.IntVar(&f.MaxIdleConns, "i", 200, "Number of max sql db idle connections")
 		flag.IntVar(&f.MaxOpenConns, "o", 1000, "Number of max sql db open connections")
+		flag.IntVar(&f.Seed, "s", 0, "Seed value for reproducibility")
 		flag.DurationVar(&f.ConnMaxLifetimeInSec, "l", 100*time.Second, "Maximum lifetime of each open connection")
 		flag.Parse()
 	}
