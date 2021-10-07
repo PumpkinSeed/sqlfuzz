@@ -14,7 +14,7 @@ import (
 
 func main() {
 	f := flags.Get()
-	gofakeit.Seed(0)
+	gofakeit.Seed(f.Seed)
 	driver := drivers.New(f.Driver)
 	db := connector.Connection(driver, f)
 	defer db.Close()

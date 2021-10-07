@@ -25,8 +25,9 @@ func TestFuzz(t *testing.T) {
 	f.Parsed = true
 	f.Num = 10
 	f.Workers = 2
+	f.Seed = 1
 
-	gofakeit.Seed(0)
+	gofakeit.Seed(f.Seed)
 	driver := drivers.New(f.Driver)
 	testable := drivers.NewTestable(f.Driver)
 	db := connector.Connection(driver, f)
@@ -82,8 +83,9 @@ func TestFuzzPostgres(t *testing.T) {
 	f.Parsed = true
 	f.Num = 10
 	f.Workers = 2
+	f.Seed = 1
 
-	gofakeit.Seed(0)
+	gofakeit.Seed(f.Seed)
 	driver := drivers.New(f.Driver)
 	testable := drivers.NewTestable(f.Driver)
 	db := connector.Connection(driver, f)
@@ -149,8 +151,9 @@ func TestMysqlMultiInsert(t *testing.T) {
 	f.Parsed = true
 	f.Num = 10
 	f.Workers = 2
+	f.Seed = 1
 
-	gofakeit.Seed(0)
+	gofakeit.Seed(f.Seed)
 	driver := drivers.New(f.Driver)
 	testable := drivers.NewTestable(f.Driver)
 	test, err := testable.GetTestCase("multi")
@@ -190,8 +193,9 @@ func TestPostgresMultiInsert(t *testing.T) {
 	f.Parsed = true
 	f.Num = 10
 	f.Workers = 2
+	f.Seed = 1
 
-	gofakeit.Seed(0)
+	gofakeit.Seed(f.Seed)
 	driver := drivers.New(f.Driver)
 	testable := drivers.NewTestable(f.Driver)
 	test, err := testable.GetTestCase("multi")
