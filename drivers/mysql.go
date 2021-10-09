@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/PumpkinSeed/sqlfuzz/drivers/types"
 )
 
 const (
@@ -13,7 +15,7 @@ const (
 )
 
 var (
-	mySQLNameToTestCase = map[string]TestCase{
+	mySQLNameToTestCase = map[string]types.TestCase{
 		"single": {
 			TableToCreateQueryMap: map[string]string{DefaultTableCreateQueryKey: `CREATE TABLE %s (
 		id INT(6) UNSIGNED,
@@ -39,7 +41,7 @@ var (
 
 // MySQL implementation of the Driver
 type MySQL struct {
-	f Flags
+	f types.Flags
 }
 
 func (m MySQL) ShowTables(db *sql.DB) ([]string, error) {
@@ -77,95 +79,95 @@ func (m MySQL) Insert(fields []string, table string) string {
 }
 
 // MapField returns the actual fields
-func (m MySQL) MapField(descriptor FieldDescriptor) Field {
+func (m MySQL) MapField(descriptor types.FieldDescriptor) types.Field {
 	field := strings.ToLower(descriptor.Type)
 	// String types
 	if strings.HasPrefix(field, "varchar") {
 		l := length(field, "varchar")
 		if l == nil || len(l) < 1 {
-			return Field{Type: Unknown, Length: -1}
+			return types.Field{Type: types.Unknown, Length: -1}
 		}
-		return Field{Type: String, Length: l[0]}
+		return types.Field{Type: types.String, Length: l[0]}
 	}
 	if strings.HasPrefix(field, "char") {
 		l := length(field, "char")
 		if l == nil || len(l) < 1 {
-			return Field{Type: Unknown, Length: -1}
+			return types.Field{Type: types.Unknown, Length: -1}
 		}
-		return Field{Type: String, Length: l[0]}
+		return types.Field{Type: types.String, Length: l[0]}
 	}
 	if strings.HasPrefix(field, "varbinary") {
 		l := length(field, "varbinary")
 		if l == nil || len(l) < 1 {
-			return Field{Type: Unknown, Length: -1}
+			return types.Field{Type: types.Unknown, Length: -1}
 		}
-		return Field{Type: String, Length: l[0]}
+		return types.Field{Type: types.String, Length: l[0]}
 	}
 	if strings.HasPrefix(field, "binary") {
 		l := length(field, "binary")
 		if l == nil || len(l) < 1 {
-			return Field{Type: Unknown, Length: -1}
+			return types.Field{Type: types.Unknown, Length: -1}
 		}
-		return Field{Type: String, Length: l[0]}
+		return types.Field{Type: types.String, Length: l[0]}
 	}
 
 	// Numeric types
 	if strings.HasPrefix(field, "tinyint") {
-		return Field{Type: Bool, Length: -1}
+		return types.Field{Type: types.Bool, Length: -1}
 	}
 	if strings.HasPrefix(field, "smallint") {
-		return Field{Type: Int16, Length: -1}
+		return types.Field{Type: types.Int16, Length: -1}
 	}
 	if strings.HasPrefix(field, "mediumint") {
-		return Field{Type: Int16, Length: -1}
+		return types.Field{Type: types.Int16, Length: -1}
 	}
 	if strings.HasPrefix(field, "int") || strings.HasPrefix(field, "bigint") {
-		return Field{Type: Int32, Length: -1}
+		return types.Field{Type: types.Int32, Length: -1}
 	}
 
 	// Float types
 	if strings.HasPrefix(field, "decimal") {
 		l := length(field, "decimal")
 		if l == nil || len(l) < 2 || l[0] < l[1] {
-			return Field{Type: Unknown, Length: -1}
+			return types.Field{Type: types.Unknown, Length: -1}
 		}
-		return Field{Type: Float, Length: l[0] - l[1]}
+		return types.Field{Type: types.Float, Length: l[0] - l[1]}
 	}
 	if strings.HasPrefix(field, "float") {
 		l := length(field, "float")
 		if l == nil || len(l) < 2 || l[0] < l[1] {
-			return Field{Type: Unknown, Length: -1}
+			return types.Field{Type: types.Unknown, Length: -1}
 		}
-		return Field{Type: Float, Length: l[0] - l[1]}
+		return types.Field{Type: types.Float, Length: l[0] - l[1]}
 	}
 	if strings.HasPrefix(field, "double") {
 		l := length(field, "double")
 		if l == nil || len(l) < 2 || l[0] < l[1] {
-			return Field{Type: Unknown, Length: -1}
+			return types.Field{Type: types.Unknown, Length: -1}
 		}
-		return Field{Type: Float, Length: l[0] - l[1]}
+		return types.Field{Type: types.Float, Length: l[0] - l[1]}
 	}
 
 	// Blob
 	if strings.HasPrefix(field, "blob") || strings.HasPrefix(field, "tinyblob") ||
 		strings.HasPrefix(field, "mediumblob") || strings.HasPrefix(field, "longblob") {
-		return Field{Type: Blob, Length: -1}
+		return types.Field{Type: types.Blob, Length: -1}
 	}
 
 	// Text
 	if strings.HasPrefix(field, "text") || strings.HasPrefix(field, "tinytext") ||
 		strings.HasPrefix(field, "mediumtext") || strings.HasPrefix(field, "longtext") {
-		return Field{Type: Text, Length: -1}
+		return types.Field{Type: types.Text, Length: -1}
 	}
 
 	// Json
 	if strings.HasPrefix(field, "json") {
-		return Field{Type: Json, Length: -1}
+		return types.Field{Type: types.Json, Length: -1}
 	}
 
 	// Year
 	if strings.HasPrefix(field, "year") {
-		return Field{Type: Year, Length: 4}
+		return types.Field{Type: types.Year, Length: 4}
 	}
 
 	// Time
@@ -174,7 +176,7 @@ func (m MySQL) MapField(descriptor FieldDescriptor) Field {
 	// Datetime
 	if strings.HasPrefix(field, "datetime") || strings.HasPrefix(field, "date") ||
 		strings.HasPrefix(field, "timestamp") || strings.HasPrefix(field, "time") {
-		return Field{Type: Time, Length: -1}
+		return types.Field{Type: types.Time, Length: -1}
 	}
 
 	// Enum
@@ -183,13 +185,13 @@ func (m MySQL) MapField(descriptor FieldDescriptor) Field {
 		f = strings.Replace(f, ")", "", -1)
 		f = strings.Replace(f, "'", "", -1)
 		f = strings.Replace(f, " ", "", -1)
-		return Field{Type: Enum, Length: -1, Enum: strings.Split(f, ",")}
+		return types.Field{Type: types.Enum, Length: -1, Enum: strings.Split(f, ",")}
 	}
 
-	return Field{Type: Unknown, Length: -1}
+	return types.Field{Type: types.Unknown, Length: -1}
 }
 
-func (MySQL) Describe(table string, db *sql.DB) ([]FieldDescriptor, error) {
+func (MySQL) Describe(table string, db *sql.DB) ([]types.FieldDescriptor, error) {
 	describeQuery := fmt.Sprintf("DESCRIBE %s;", table)
 	results, err := db.Query(describeQuery)
 	if err != nil {
@@ -202,9 +204,9 @@ func (MySQL) Describe(table string, db *sql.DB) ([]FieldDescriptor, error) {
 	return parseMySQLFields(results, fkRows)
 }
 
-func (m MySQL) MultiDescribe(tables []string, db *sql.DB) (map[string][]FieldDescriptor, []string, error) {
+func (m MySQL) MultiDescribe(tables []string, db *sql.DB) (map[string][]types.FieldDescriptor, []string, error) {
 	processedTables := make(map[string]struct{})
-	tableToDescriptorMap := make(map[string][]FieldDescriptor)
+	tableToDescriptorMap := make(map[string][]types.FieldDescriptor)
 	for {
 		newTableToDescriptorMap, newlyReferencedTables, err := multiDescribeHelper(tables, processedTables, db, m)
 		if err != nil {
@@ -243,18 +245,18 @@ func (m MySQL) TestTable(db *sql.DB, testCase, table string) error {
 	return testTable(db, testCase, table, m)
 }
 
-func (MySQL) GetTestCase(name string) (TestCase, error) {
+func (MySQL) GetTestCase(name string) (types.TestCase, error) {
 	if val, ok := mySQLNameToTestCase[name]; ok {
 		return val, nil
 	}
-	return TestCase{}, errors.New(fmt.Sprintf("postgres: Error getting testcase with name %v", name))
+	return types.TestCase{}, errors.New(fmt.Sprintf("postgres: Error getting testcase with name %v", name))
 }
 
-func parseMySQLFields(results, fkRows *sql.Rows) ([]FieldDescriptor, error) {
-	var fields []FieldDescriptor
-	columnToFKMap := make(map[string]FKDescriptor)
+func parseMySQLFields(results, fkRows *sql.Rows) ([]types.FieldDescriptor, error) {
+	var fields []types.FieldDescriptor
+	columnToFKMap := make(map[string]types.FKDescriptor)
 	for fkRows.Next() {
-		var fk FKDescriptor
+		var fk types.FKDescriptor
 		err := fkRows.Scan(&fk.ConstraintName, &fk.TableName, &fk.ColumnName, &fk.ForeignTableName, &fk.ForeignColumnName)
 		if err != nil {
 			return nil, err
@@ -262,7 +264,7 @@ func parseMySQLFields(results, fkRows *sql.Rows) ([]FieldDescriptor, error) {
 		columnToFKMap[fk.ColumnName] = fk
 	}
 	for results.Next() {
-		var d FieldDescriptor
+		var d types.FieldDescriptor
 		err := results.Scan(&d.Field, &d.Type, &d.Null, &d.Key, &d.Default, &d.Extra)
 		if err != nil {
 			return nil, err

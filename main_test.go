@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/PumpkinSeed/sqlfuzz/drivers"
+	"github.com/PumpkinSeed/sqlfuzz/drivers/types"
 	"github.com/PumpkinSeed/sqlfuzz/pkg/connector"
 	"github.com/PumpkinSeed/sqlfuzz/pkg/flags"
 	"github.com/PumpkinSeed/sqlfuzz/pkg/fuzzer"
@@ -13,7 +14,7 @@ import (
 
 func TestFuzz(t *testing.T) {
 	f := flags.Flags{}
-	f.Driver = drivers.Flags{
+	f.Driver = types.Flags{
 		Username: "test",
 		Password: "test",
 		Database: "test",
@@ -71,7 +72,7 @@ func TestFuzz(t *testing.T) {
 
 func TestFuzzPostgres(t *testing.T) {
 	f := flags.Flags{}
-	f.Driver = drivers.Flags{
+	f.Driver = types.Flags{
 		Username: "test",
 		Password: "test",
 		Database: "test",
@@ -139,7 +140,7 @@ func TestFuzzPostgres(t *testing.T) {
 
 func TestMysqlMultiInsert(t *testing.T) {
 	f := flags.Flags{}
-	f.Driver = drivers.Flags{
+	f.Driver = types.Flags{
 		Username: "test",
 		Password: "test",
 		Database: "test",
@@ -181,7 +182,7 @@ func TestMysqlMultiInsert(t *testing.T) {
 
 func TestPostgresMultiInsert(t *testing.T) {
 	f := flags.Flags{}
-	f.Driver = drivers.Flags{
+	f.Driver = types.Flags{
 		Username: "test",
 		Password: "test",
 		Database: "test",

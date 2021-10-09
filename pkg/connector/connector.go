@@ -2,14 +2,15 @@ package connector
 
 import (
 	"database/sql"
-	"github.com/PumpkinSeed/sqlfuzz/drivers"
+	"log"
+
+	"github.com/PumpkinSeed/sqlfuzz/drivers/types"
 	"github.com/PumpkinSeed/sqlfuzz/pkg/flags"
 	_ "github.com/lib/pq"
-	"log"
 )
 
 // Connection building a singleton connection to the database for give driver
-func Connection(d drivers.Driver, f flags.Flags) *sql.DB {
+func Connection(d types.Driver, f flags.Flags) *sql.DB {
 	db, err := connect(d)
 	if err != nil {
 		log.Fatal(err)
@@ -22,6 +23,6 @@ func Connection(d drivers.Driver, f flags.Flags) *sql.DB {
 }
 
 // connect doing the direct connection open to the SQL database
-func connect(d drivers.Driver) (*sql.DB, error) {
+func connect(d types.Driver) (*sql.DB, error) {
 	return sql.Open(d.Driver(), d.Connection())
 }
