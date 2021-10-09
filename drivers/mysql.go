@@ -1,4 +1,3 @@
-//nolint:lll
 package drivers
 
 import (
@@ -11,7 +10,9 @@ import (
 
 const (
 	MySQLDescribeTableQuery = "SHOW TABLES;"
-	mysqlFKQuery            = "SELECT CONSTRAINT_NAME,TABLE_NAME,COLUMN_NAME,REFERENCED_TABLE_NAME,REFERENCED_COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE where REFERENCED_TABLE_NAME <> 'NULL' and REFERENCED_COLUMN_NAME <> 'NULL' and TABLE_NAME = '%s'"
+	mysqlFKQuery            = `SELECT CONSTRAINT_NAME,TABLE_NAME,COLUMN_NAME,REFERENCED_TABLE_NAME,REFERENCED_COLUMN_NAME 
+							   from INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
+                               where REFERENCED_TABLE_NAME <> 'NULL' and REFERENCED_COLUMN_NAME <> 'NULL' and TABLE_NAME = '%s'`
 )
 
 var (
@@ -30,9 +31,13 @@ var (
 			TableToCreateQueryMap: map[string]string{
 				"t_currency": "CREATE TABLE IF NOT EXISTS t_currency ( id int not null,shortcut char (3) not null,PRIMARY KEY (id));",
 				"t_location": "CREATE TABLE IF NOT EXISTS t_location	( id int not null,location_name  text not null,PRIMARY KEY (id));",
-				"t_product": "CREATE TABLE IF NOT EXISTS t_product( id int not null,name text not null,currency_id int ,PRIMARY KEY (id), FOREIGN KEY (currency_id) REFERENCES t_currency(id));",
-				"t_product_desc": "CREATE TABLE IF NOT EXISTS t_product_desc (id int not null,product_id  int ,	description text not null,	PRIMARY KEY (id), FOREIGN KEY (product_id) REFERENCES t_currency(id) );",
-				"t_product_stock": "CREATE TABLE IF NOT EXISTS t_product_stock(product_id  int ,	location_id int ,amount numeric not null, FOREIGN KEY (product_id) REFERENCES t_currency(id),FOREIGN KEY(location_id) REFERENCES t_location(id));",
+				"t_product": `CREATE TABLE IF NOT EXISTS t_product( id int not null,name text not null,currency_id int,
+                              PRIMARY KEY (id), FOREIGN KEY (currency_id) REFERENCES t_currency(id));`,
+				"t_product_desc": `CREATE TABLE IF NOT EXISTS t_product_desc (id int not null,product_id  int ,	description text not null,
+                                   PRIMARY KEY (id), FOREIGN KEY (product_id) REFERENCES t_currency(id) );`,
+				"t_product_stock": `CREATE TABLE IF NOT EXISTS 
+									t_product_stock(product_id  int, location_id int, amount numeric not null, 
+								    FOREIGN KEY (product_id) REFERENCES t_currency(id),FOREIGN KEY(location_id) REFERENCES t_location(id));`,
 			},
 			TableCreationOrder: []string{"t_currency", "t_location", "t_product", "t_product_desc", "t_product_stock"},
 		},
@@ -205,9 +210,9 @@ func (MySQL) Describe(table string, db *sql.DB) ([]types.FieldDescriptor, error)
 	return parseMySQLFields(results, fkRows)
 }
 
-func (m MySQL) MultiDescribe(tables []string, db *sql.DB) (map[string][]types.FieldDescriptor, []string, error) {
+func (m MySQL) MultiDescribe(tables []string, db *sql.DB) (tableToDescriptorMap map[string][]types.FieldDescriptor, insertionOrder []string, err error) {
 	processedTables := make(map[string]struct{})
-	tableToDescriptorMap := make(map[string][]types.FieldDescriptor)
+	tableToDescriptorMap = make(map[string][]types.FieldDescriptor)
 	for {
 		newTableToDescriptorMap, newlyReferencedTables, err := multiDescribeHelper(tables, processedTables, db, m)
 		if err != nil {
@@ -221,7 +226,7 @@ func (m MySQL) MultiDescribe(tables []string, db *sql.DB) (map[string][]types.Fi
 		}
 		tables = newlyReferencedTables
 	}
-	insertionOrder, err := getInsertionOrder(tableToDescriptorMap)
+	insertionOrder, err = getInsertionOrder(tableToDescriptorMap)
 	if err != nil {
 		return nil, nil, err
 	}

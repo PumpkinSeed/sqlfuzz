@@ -52,7 +52,10 @@ linters-settings:
 
   gocritic:
     enabled-checks:
-      - rangeValCopy
+      - truncatecmp
+      - ruleguard
+      - unnamedresult
+      - nestingreduce
     disabled-checks:
       - regexpMust
     enabled-tags:

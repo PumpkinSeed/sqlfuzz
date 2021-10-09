@@ -83,22 +83,21 @@ func testTable(db *sql.DB, testCase, table string, d types.Testable) error {
 		return err
 	}
 
-	//nolint:nestif
-	if test.TableCreationOrder == nil {
-		if query, ok := test.TableToCreateQueryMap[DefaultTableCreateQueryKey]; ok {
-			if res, err := db.ExecContext(context.Background(), fmt.Sprintf(query, table)); err != nil {
-				return err
-			} else if _, err := res.RowsAffected(); err != nil {
-				return err
-			}
-		}
-	} else {
+	if test.TableCreationOrder != nil {
 		for _, table := range test.TableCreationOrder {
 			createCommand := test.TableToCreateQueryMap[table]
 			_, err := db.Query(strings.TrimSpace(createCommand))
 			if err != nil {
 				return err
 			}
+		}
+		return nil
+	}
+	if query, ok := test.TableToCreateQueryMap[DefaultTableCreateQueryKey]; ok {
+		if res, err := db.ExecContext(context.Background(), fmt.Sprintf(query, table)); err != nil {
+			return err
+		} else if _, err := res.RowsAffected(); err != nil {
+			return err
 		}
 	}
 	return nil

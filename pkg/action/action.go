@@ -1,4 +1,4 @@
-//nolint:gocognit,cyclop
+//nolint:cyclop
 package action
 
 import (
@@ -54,44 +54,45 @@ func (sqlInsertInput SQLInsertInput) multiInsert() error {
 	}
 	tableFieldValuesMap := make(map[string]map[string]interface{})
 	for _, table := range multiInsertParams.InsertionOrder {
-		//nolint:nestif
-		if fields, ok := multiInsertParams.TableToFieldsMap[table]; ok {
-			var f = make([]string, 0, len(fields))
-			var values []interface{}
-			for _, field := range fields {
-				f = append(f, field.Field)
-				if field.HasDefaultValue {
-					continue
-				}
-				var data interface{}
-				if field.ForeignKeyDescriptor != nil {
-					if foreignTableFields, ok := tableFieldValuesMap[field.ForeignKeyDescriptor.ForeignTableName]; ok {
-						// nolint:staticcheck
-						if val, ok := foreignTableFields[field.ForeignKeyDescriptor.ForeignColumnName]; ok {
-							data = val
-							continue // TODO this can be an error
-						}
-					}
-					val, err := multiInsertParams.Driver.GetLatestColumnValue(
-						field.ForeignKeyDescriptor.ForeignTableName,
-						field.ForeignKeyDescriptor.ForeignColumnName,
-						multiInsertParams.DB,
-					)
-					if err != nil {
-						return err
-					}
-					data = val
-					// Get from table. If no value present in table as well, throw error.
-				} else {
-					data = generateData(multiInsertParams.Driver, field)
-				}
-				values = append(values, data)
+		fields, ok := multiInsertParams.TableToFieldsMap[table]
+		if !ok {
+			continue
+		}
+
+		var f = make([]string, 0, len(fields))
+		var values []interface{}
+		for _, field := range fields {
+			f = append(f, field.Field)
+			if field.HasDefaultValue {
+				continue
 			}
-			query := multiInsertParams.Driver.Insert(f, table)
-			_, err := multiInsertParams.DB.Exec(query, values...)
+
+			if field.ForeignKeyDescriptor == nil {
+				values = append(values, generateData(multiInsertParams.Driver, field))
+				continue
+			}
+
+			if foreignTableFields, ok := tableFieldValuesMap[field.ForeignKeyDescriptor.ForeignTableName]; ok {
+				if val, ok := foreignTableFields[field.ForeignKeyDescriptor.ForeignColumnName]; ok {
+					values = append(values, val)
+					continue // TODO this can be an error
+				}
+			}
+			val, err := multiInsertParams.Driver.GetLatestColumnValue(
+				field.ForeignKeyDescriptor.ForeignTableName,
+				field.ForeignKeyDescriptor.ForeignColumnName,
+				multiInsertParams.DB,
+			)
 			if err != nil {
 				return err
 			}
+			values = append(values, val)
+			// Get from table. If no value present in table as well, throw error.
+		}
+		query := multiInsertParams.Driver.Insert(f, table)
+		_, err := multiInsertParams.DB.Exec(query, values...)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
