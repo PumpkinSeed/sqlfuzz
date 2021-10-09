@@ -14,7 +14,8 @@ const (
 	DefaultTableCreateQueryKey = ""
 )
 
-func multiDescribeHelper(tables []string, processedTables map[string]struct{}, db *sql.DB, d types.Driver) (map[string][]types.FieldDescriptor, []string, error) {
+func multiDescribeHelper(tables []string, processedTables map[string]struct{}, db *sql.DB,
+	d types.Driver) (map[string][]types.FieldDescriptor, []string, error) {
 	knownTables := make(map[string]bool)
 	tableDescriptorMap := make(map[string][]types.FieldDescriptor)
 	var newlyReferencedTables []string
@@ -81,6 +82,8 @@ func testTable(db *sql.DB, testCase, table string, d types.Testable) error {
 	if err != nil {
 		return err
 	}
+
+	//nolint:nestif
 	if test.TableCreationOrder == nil {
 		if query, ok := test.TableToCreateQueryMap[DefaultTableCreateQueryKey]; ok {
 			if res, err := db.ExecContext(context.Background(), fmt.Sprintf(query, table)); err != nil {

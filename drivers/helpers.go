@@ -11,10 +11,10 @@ func length(field string, t string) []int16 {
 	if !(strings.Contains(field, "(") && strings.Contains(field, ")")) {
 		return nil
 	}
-	str := strings.Replace(field, t, "", -1)
-	str = strings.Replace(str, "(", "", -1)
-	str = strings.Replace(str, ")", "", -1)
-	str = strings.Replace(str, " ", "", -1)
+	str := strings.ReplaceAll(field, t, "")
+	str = strings.ReplaceAll(str, "(", "")
+	str = strings.ReplaceAll(str, ")", "")
+	str = strings.ReplaceAll(str, " ", "")
 	if strings.Contains(str, ",") {
 		p := strings.Split(str, ",")
 		var result []int16

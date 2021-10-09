@@ -1,8 +1,8 @@
+//nolint:lll
 package drivers
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -79,6 +79,7 @@ func (m MySQL) Insert(fields []string, table string) string {
 }
 
 // MapField returns the actual fields
+//nolint:gocognit,cyclop
 func (m MySQL) MapField(descriptor types.FieldDescriptor) types.Field {
 	field := strings.ToLower(descriptor.Type)
 	// String types
@@ -181,10 +182,10 @@ func (m MySQL) MapField(descriptor types.FieldDescriptor) types.Field {
 
 	// Enum
 	if strings.HasPrefix(field, "enum") {
-		f := strings.Replace(field, "enum(", "", -1)
-		f = strings.Replace(f, ")", "", -1)
-		f = strings.Replace(f, "'", "", -1)
-		f = strings.Replace(f, " ", "", -1)
+		f := strings.ReplaceAll(field, "enum(", "")
+		f = strings.ReplaceAll(f, ")", "")
+		f = strings.ReplaceAll(f, "'", "")
+		f = strings.ReplaceAll(f, " ", "")
 		return types.Field{Type: types.Enum, Length: -1, Enum: strings.Split(f, ",")}
 	}
 
@@ -235,7 +236,9 @@ func (MySQL) GetLatestColumnValue(table, column string, db *sql.DB) (interface{}
 	}
 	var val interface{}
 	for rows.Next() {
-		rows.Scan(&val)
+		if err := rows.Scan(&val); err != nil {
+			return nil, err
+		}
 	}
 	return val, nil
 }
@@ -249,7 +252,7 @@ func (MySQL) GetTestCase(name string) (types.TestCase, error) {
 	if val, ok := mySQLNameToTestCase[name]; ok {
 		return val, nil
 	}
-	return types.TestCase{}, errors.New(fmt.Sprintf("postgres: Error getting testcase with name %v", name))
+	return types.TestCase{}, fmt.Errorf("postgres: Error getting testcase with name %v", name)
 }
 
 func parseMySQLFields(results, fkRows *sql.Rows) ([]types.FieldDescriptor, error) {

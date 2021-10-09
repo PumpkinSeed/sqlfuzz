@@ -51,7 +51,7 @@ type FKDescriptor struct {
 	ForeignColumnName string
 }
 
-//FieldDescriptor represents a field described by the table in the SQL database
+// FieldDescriptor represents a field described by the table in the SQL database
 type FieldDescriptor struct {
 	Field                string
 	Type                 string
