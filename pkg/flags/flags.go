@@ -2,15 +2,16 @@ package flags
 
 import (
 	"flag"
-	"github.com/PumpkinSeed/sqlfuzz/drivers"
 	"time"
+
+	"github.com/PumpkinSeed/sqlfuzz/drivers/types"
 )
 
 var f Flags
 
 // Flags represents the CLI flags
 type Flags struct {
-	Driver drivers.Flags
+	Driver types.Flags
 
 	Num     int
 	Workers int

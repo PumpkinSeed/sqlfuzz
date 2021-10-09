@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/PumpkinSeed/sqlfuzz/drivers"
+	"github.com/PumpkinSeed/sqlfuzz/drivers/types"
 	"github.com/brianvoe/gofakeit/v5"
 	_ "github.com/lib/pq"
 	"github.com/rs/xid"
@@ -20,16 +20,16 @@ import (
 
 type SingleInsertParams struct {
 	DB     *sql.DB
-	Driver drivers.Driver
+	Driver types.Driver
 	Table  string
-	Fields []drivers.FieldDescriptor
+	Fields []types.FieldDescriptor
 }
 
 type MultiInsertParams struct {
 	DB               *sql.DB
-	Driver           drivers.Driver
+	Driver           types.Driver
 	InsertionOrder   []string
-	TableToFieldsMap map[string][]drivers.FieldDescriptor
+	TableToFieldsMap map[string][]types.FieldDescriptor
 }
 
 type SQLInsertInput struct {
@@ -113,10 +113,10 @@ func (sqlInsertInput SQLInsertInput) singleInsert() error {
 }
 
 // generateData generates random data based on the field
-func generateData(driver drivers.Driver, fieldDescriptor drivers.FieldDescriptor) interface{} {
+func generateData(driver types.Driver, fieldDescriptor types.FieldDescriptor) interface{} {
 	field := driver.MapField(fieldDescriptor)
 	switch field.Type {
-	case drivers.String:
+	case types.String:
 		if field.Length > 19 {
 			return xid.New().String()
 		}
@@ -124,28 +124,28 @@ func generateData(driver drivers.Driver, fieldDescriptor drivers.FieldDescriptor
 			return randomString(field.Length)
 		}
 		return randomString(20)
-	case drivers.Int16:
+	case types.Int16:
 		return gofakeit.Number(1, 32766)
-	case drivers.Int32:
+	case types.Int32:
 		return gofakeit.Number(1, 2147483647)
-	case drivers.Float:
+	case types.Float:
 		max := 2147483647
 		if fieldDescriptor.Precision.Valid && fieldDescriptor.Scale.Valid {
 			max = int(math.Pow10(fieldDescriptor.Precision.Int - fieldDescriptor.Scale.Int))
 		}
 		return gofakeit.Number(1, max)
-	case drivers.Blob:
+	case types.Blob:
 		return base64.StdEncoding.EncodeToString([]byte(randomString(12)))
-	case drivers.Text:
+	case types.Text:
 		return randomString(12)
-	case drivers.Enum:
+	case types.Enum:
 		return field.Enum[gofakeit.Number(0, len(field.Enum)-1)]
-	case drivers.Bool:
+	case types.Bool:
 		if gofakeit.Number(1, 200)%2 == 0 {
 			return true
 		}
 		return false
-	case drivers.Json:
+	case types.Json:
 		return fmt.Sprintf(
 			`{"%s": "%s", "%s": "%s"}`,
 			gofakeit.Password(true, true, false, false, false, 6),
@@ -153,7 +153,7 @@ func generateData(driver drivers.Driver, fieldDescriptor drivers.FieldDescriptor
 			gofakeit.Password(true, true, false, false, false, 6),
 			gofakeit.Password(true, true, false, false, false, 6),
 		)
-	case drivers.Time:
+	case types.Time:
 		return time.Date(
 			gofakeit.Number(1980, 2028),
 			time.Month(gofakeit.Number(0, 12)),
@@ -163,9 +163,9 @@ func generateData(driver drivers.Driver, fieldDescriptor drivers.FieldDescriptor
 			gofakeit.Second(),
 			gofakeit.NanoSecond(),
 			time.UTC)
-	case drivers.Year:
+	case types.Year:
 		return gofakeit.Number(1901, 2155)
-	case drivers.XML:
+	case types.XML:
 		xml, err := gofakeit.XML(&gofakeit.XMLOptions{
 			Type:          "single",
 			RootElement:   "xml",
@@ -182,11 +182,11 @@ func generateData(driver drivers.Driver, fieldDescriptor drivers.FieldDescriptor
 			return nil
 		}
 		return string(xml)
-	case drivers.UUID:
+	case types.UUID:
 		return gofakeit.UUID()
-	case drivers.BinaryString:
+	case types.BinaryString:
 		return binaryString(int(field.Length))
-	case drivers.Unknown:
+	case types.Unknown:
 		log.Printf("unknown field type: %s\n", fieldDescriptor.Field)
 		return nil
 	}

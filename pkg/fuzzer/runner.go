@@ -6,13 +6,14 @@ import (
 	"sync"
 
 	"github.com/PumpkinSeed/sqlfuzz/drivers"
+	"github.com/PumpkinSeed/sqlfuzz/drivers/types"
 	"github.com/PumpkinSeed/sqlfuzz/pkg/action"
 	"github.com/PumpkinSeed/sqlfuzz/pkg/connector"
 	"github.com/PumpkinSeed/sqlfuzz/pkg/flags"
 	_ "github.com/lib/pq"
 )
 
-func getDriverAndDB(f flags.Flags) (drivers.Driver, *sql.DB) {
+func getDriverAndDB(f flags.Flags) (types.Driver, *sql.DB) {
 	driver := drivers.New(f.Driver)
 	db := connector.Connection(driver, f)
 	return driver, db
@@ -54,7 +55,7 @@ func worker(jobs <-chan struct{}, wg *sync.WaitGroup, f flags.Flags, input actio
 }
 
 // Run the commands in a worker pool
-func Run(fields []drivers.FieldDescriptor, f flags.Flags) error {
+func Run(fields []types.FieldDescriptor, f flags.Flags) error {
 	driver, db := getDriverAndDB(f)
 	defer func() {
 		if err := db.Close(); err != nil {
@@ -72,7 +73,7 @@ func Run(fields []drivers.FieldDescriptor, f flags.Flags) error {
 	return runHelper(f, sqlInsertInput)
 }
 
-func RunMulti(tableToFieldsMap map[string][]drivers.FieldDescriptor, insertionOrder []string, f flags.Flags) error {
+func RunMulti(tableToFieldsMap map[string][]types.FieldDescriptor, insertionOrder []string, f flags.Flags) error {
 	driver, db := getDriverAndDB(f)
 	defer func() {
 		if err := db.Close(); err != nil {

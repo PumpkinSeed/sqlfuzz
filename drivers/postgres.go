@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"strings"
+
+	"github.com/PumpkinSeed/sqlfuzz/drivers/types"
 )
 
 /*
@@ -89,7 +91,7 @@ WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_name='%s'
 )
 
 var (
-	pgNameToTestCase = map[string]TestCase{
+	pgNameToTestCase = map[string]types.TestCase{
 		"single": {
 			TableToCreateQueryMap: map[string]string{DefaultTableCreateQueryKey: CreateTable},
 			TableCreationOrder:    nil,
@@ -139,7 +141,7 @@ var (
 )
 
 type Postgres struct {
-	f Flags
+	f types.Flags
 }
 
 func (p Postgres) ShowTables(db *sql.DB) ([]string, error) {
@@ -169,47 +171,47 @@ func (p Postgres) Insert(fields []string, table string) string {
 	return fmt.Sprintf(PSQLInsertTemplate, table, strings.Join(fields, `","`), pgValPlaceholder(len(fields)))
 }
 
-func (p Postgres) MapField(descriptor FieldDescriptor) Field {
-	field := Field{Type: Unknown, Length: -1}
+func (p Postgres) MapField(descriptor types.FieldDescriptor) types.Field {
+	field := types.Field{Type: types.Unknown, Length: -1}
 	switch descriptor.Type {
 	case "bigint":
-		return Field{Type: Int32, Length: -1}
+		return types.Field{Type: types.Int32, Length: -1}
 	case "bit", "bit varying", "bytea":
-		return Field{Type: BinaryString, Length: int16(descriptor.Length.Int)}
+		return types.Field{Type: types.BinaryString, Length: int16(descriptor.Length.Int)}
 	case "character", "character varying":
 		if descriptor.Length.Valid && descriptor.Length.Int > 0 {
-			return Field{Type: String, Length: int16(descriptor.Length.Int)}
+			return types.Field{Type: types.String, Length: int16(descriptor.Length.Int)}
 		}
-		return Field{Type: String, Length: -1}
+		return types.Field{Type: types.String, Length: -1}
 	case "date":
-		return Field{Type: Time, Length: -1}
+		return types.Field{Type: types.Time, Length: -1}
 	case "double precision", "numeric", "real":
-		return Field{Type: Float, Length: -1}
+		return types.Field{Type: types.Float, Length: -1}
 	case "integer":
-		return Field{Type: Int32, Length: -1}
+		return types.Field{Type: types.Int32, Length: -1}
 	case "json", "jsonb":
-		return Field{Type: Json, Length: -1}
+		return types.Field{Type: types.Json, Length: -1}
 	case "smallint":
-		return Field{Type: Int16, Length: -1}
+		return types.Field{Type: types.Int16, Length: -1}
 	case "text":
-		return Field{Type: Text, Length: -1}
+		return types.Field{Type: types.Text, Length: -1}
 	case "time without time zone", "time with time zone", "timestamp without time zone":
-		return Field{Type: Time, Length: -1}
+		return types.Field{Type: types.Time, Length: -1}
 	case "xml":
-		return Field{Type: XML, Length: -1}
+		return types.Field{Type: types.XML, Length: -1}
 	case "uuid":
-		return Field{Type: UUID, Length: -1}
+		return types.Field{Type: types.UUID, Length: -1}
 	case "boolean":
-		return Field{Type: Bool, Length: -1}
+		return types.Field{Type: types.Bool, Length: -1}
 	default:
 		log.Printf("Field not identified. Name %s Length %d", descriptor.Field, descriptor.Length.Int)
 	}
 	return field
 }
 
-func (p Postgres) MultiDescribe(tables []string, db *sql.DB) (map[string][]FieldDescriptor, []string, error) {
+func (p Postgres) MultiDescribe(tables []string, db *sql.DB) (map[string][]types.FieldDescriptor, []string, error) {
 	processedTables := make(map[string]struct{})
-	tableToDescriptorMap := make(map[string][]FieldDescriptor)
+	tableToDescriptorMap := make(map[string][]types.FieldDescriptor)
 	for {
 		newTableToDescriptorMap, newlyReferencedTables, err := multiDescribeHelper(tables, processedTables, db, p)
 		if err != nil {
@@ -230,7 +232,7 @@ func (p Postgres) MultiDescribe(tables []string, db *sql.DB) (map[string][]Field
 	return tableToDescriptorMap, insertionOrder, nil
 }
 
-func (p Postgres) Describe(table string, db *sql.DB) ([]FieldDescriptor, error) {
+func (p Postgres) Describe(table string, db *sql.DB) ([]types.FieldDescriptor, error) {
 	results, err := db.Query(fmt.Sprintf(PSQLDescribeTemplate, strings.ToLower(table)))
 	if err != nil {
 		return nil, err
@@ -260,18 +262,18 @@ func (p Postgres) TestTable(db *sql.DB, testCase, table string) error {
 	return testTable(db, testCase, table, p)
 }
 
-func (Postgres) GetTestCase(name string) (TestCase, error) {
+func (Postgres) GetTestCase(name string) (types.TestCase, error) {
 	if val, ok := pgNameToTestCase[name]; ok {
 		return val, nil
 	}
-	return TestCase{}, errors.New(fmt.Sprintf("postgres: Error getting testcase with name %v", name))
+	return types.TestCase{}, errors.New(fmt.Sprintf("postgres: Error getting testcase with name %v", name))
 }
 
-func parsePostgresFields(rows, fkRows *sql.Rows) ([]FieldDescriptor, error) {
-	var tableFields []FieldDescriptor
-	columnToFKMap := make(map[string]FKDescriptor)
+func parsePostgresFields(rows, fkRows *sql.Rows) ([]types.FieldDescriptor, error) {
+	var tableFields []types.FieldDescriptor
+	columnToFKMap := make(map[string]types.FKDescriptor)
 	for fkRows.Next() {
-		var fk FKDescriptor
+		var fk types.FKDescriptor
 		err := fkRows.Scan(&fk.ConstraintName, &fk.TableName, &fk.ColumnName, &fk.ForeignTableName, &fk.ForeignColumnName)
 		if err != nil {
 			return nil, err
@@ -279,7 +281,7 @@ func parsePostgresFields(rows, fkRows *sql.Rows) ([]FieldDescriptor, error) {
 		columnToFKMap[fk.ColumnName] = fk
 	}
 	for rows.Next() {
-		var field FieldDescriptor
+		var field types.FieldDescriptor
 		err := rows.Scan(&field.Field, &field.Type, &field.Length, &field.Default, &field.Null, &field.Precision, &field.Scale)
 		field.HasDefaultValue = field.Default.Valid && len(field.Default.String) > 0
 		if err != nil {

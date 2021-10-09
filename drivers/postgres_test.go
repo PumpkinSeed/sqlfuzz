@@ -6,32 +6,33 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/PumpkinSeed/sqlfuzz/drivers/types"
 	_ "github.com/lib/pq"
 	"github.com/volatiletech/null"
 )
 
 func TestPostgres_MapField(t *testing.T) {
 	var scenarios = []struct {
-		input  FieldDescriptor
-		output Field
+		input  types.FieldDescriptor
+		output types.Field
 	}{
 		{
-			input: FieldDescriptor{
+			input: types.FieldDescriptor{
 				Type: "bigint",
 			},
-			output: Field{Type: Int32, Length: -1},
+			output: types.Field{Type: types.Int32, Length: -1},
 		},
 		{
-			input:  FieldDescriptor{Type: "bit varying", Length: null.IntFrom(10)},
-			output: Field{Type: BinaryString, Length: 10},
+			input:  types.FieldDescriptor{Type: "bit varying", Length: null.IntFrom(10)},
+			output: types.Field{Type: types.BinaryString, Length: 10},
 		},
 		{
-			input:  FieldDescriptor{Type: "character varying", Length: null.IntFrom(21)},
-			output: Field{Type: String, Length: int16(21)},
+			input:  types.FieldDescriptor{Type: "character varying", Length: null.IntFrom(21)},
+			output: types.Field{Type: types.String, Length: int16(21)},
 		},
 		{
-			input:  FieldDescriptor{Type: "json"},
-			output: Field{Type: Json, Length: -1},
+			input:  types.FieldDescriptor{Type: "json"},
+			output: types.Field{Type: types.Json, Length: -1},
 		},
 	}
 
