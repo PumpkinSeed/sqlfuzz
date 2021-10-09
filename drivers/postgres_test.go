@@ -2,7 +2,6 @@ package drivers
 
 import (
 	"encoding/json"
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -57,7 +56,7 @@ func TestPostgres_MultiDescribe(t *testing.T) {
 	}
 	err = pgDriver.TestTable(db, "multi", "")
 	if err != nil {
-		t.Errorf("error initialising multi test case : %v", err.Error())
+		t.Errorf("error initializing multi test case : %v", err.Error())
 	}
 	tables := testCase.TableCreationOrder
 	tableFieldsMap, insertionOrder, err := Postgres{}.MultiDescribe(tables, db)
@@ -65,11 +64,14 @@ func TestPostgres_MultiDescribe(t *testing.T) {
 		t.Errorf("error descriving tables %v. Error : %v", tables, err)
 	}
 	if len(tableFieldsMap) == 0 || len(insertionOrder) != len(tableFieldsMap) || len(insertionOrder) != len(tables) {
-		t.Errorf("error receiving required fields count. input len %v described fields len %v insertion order length %v", len(tables), len(tableFieldsMap), len(insertionOrder))
+		t.Errorf(
+			"error receiving required fields count. input len %v described fields len %v insertion order length %v",
+			len(tables), len(tableFieldsMap), len(insertionOrder),
+		)
 	}
 	tableFieldMapStr, err := json.Marshal(tableFieldsMap)
 	if err != nil {
 		t.Error(err)
 	}
-	fmt.Println(string(tableFieldMapStr))
+	t.Log(string(tableFieldMapStr))
 }

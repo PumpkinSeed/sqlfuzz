@@ -12,6 +12,10 @@ import (
 	"github.com/brianvoe/gofakeit/v5"
 )
 
+const (
+	testTableName = "Persons"
+)
+
 func TestFuzz(t *testing.T) {
 	f := flags.Flags{}
 	f.Driver = types.Flags{
@@ -22,7 +26,7 @@ func TestFuzz(t *testing.T) {
 		Port:     "3306",
 		Driver:   "mysql",
 	}
-	f.Table = "Persons"
+	f.Table = testTableName
 	f.Parsed = true
 	f.Num = 10
 	f.Workers = 2
@@ -80,7 +84,7 @@ func TestFuzzPostgres(t *testing.T) {
 		Port:     "5432",
 		Driver:   "postgres",
 	}
-	f.Table = "Persons"
+	f.Table = testTableName
 	f.Parsed = true
 	f.Num = 10
 	f.Workers = 2
@@ -148,7 +152,7 @@ func TestMysqlMultiInsert(t *testing.T) {
 		Port:     "3306",
 		Driver:   "mysql",
 	}
-	f.Table = "Persons"
+	f.Table = testTableName
 	f.Parsed = true
 	f.Num = 10
 	f.Workers = 2
@@ -190,7 +194,7 @@ func TestPostgresMultiInsert(t *testing.T) {
 		Port:     "5432",
 		Driver:   "postgres",
 	}
-	f.Table = "Persons"
+	f.Table = testTableName
 	f.Parsed = true
 	f.Num = 10
 	f.Workers = 2

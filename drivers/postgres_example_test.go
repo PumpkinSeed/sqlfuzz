@@ -20,7 +20,9 @@ func createTable() {
 	if err != nil {
 		return
 	}
-	db.Query(fmt.Sprintf(CreateTable, "test_table"))
+	if _, err = db.Query(fmt.Sprintf(CreateTable, "test_table")); err != nil {
+		return
+	}
 }
 
 func ExamplePostgres_ShowTables() {
@@ -37,22 +39,5 @@ func ExamplePostgres_ShowTables() {
 	}
 	for _, table := range tables {
 		fmt.Println(table)
-	}
-}
-
-func ExamplePostgres_DescribeFields() {
-	createTable()
-	db, err := getPostgresConnection()
-	if err != nil {
-		return
-	}
-	driver := Postgres{}
-	fields, err := driver.Describe("pg_data_types", db)
-	if err != nil {
-		log.Printf("Error describing table : %s", err.Error())
-		return
-	}
-	for _, field := range fields {
-		fmt.Println(fmt.Sprintf("Column name %s Field Type %s", field.Field, field.Type))
 	}
 }

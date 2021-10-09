@@ -1,8 +1,8 @@
+//nolint:lll
 package drivers
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -152,7 +152,9 @@ func (p Postgres) ShowTables(db *sql.DB) ([]string, error) {
 	var tables []string
 	for rows.Next() {
 		var table string
-		rows.Scan(&table)
+		if err := rows.Scan(&table); err != nil {
+			return nil, err
+		}
 		tables = append(tables, table)
 	}
 	return tables, nil
@@ -171,6 +173,7 @@ func (p Postgres) Insert(fields []string, table string) string {
 	return fmt.Sprintf(PSQLInsertTemplate, table, strings.Join(fields, `","`), pgValPlaceholder(len(fields)))
 }
 
+//nolint:cyclop
 func (p Postgres) MapField(descriptor types.FieldDescriptor) types.Field {
 	field := types.Field{Type: types.Unknown, Length: -1}
 	switch descriptor.Type {
@@ -252,7 +255,9 @@ func (p Postgres) GetLatestColumnValue(table, column string, db *sql.DB) (interf
 	}
 	var val interface{}
 	for rows.Next() {
-		rows.Scan(&val)
+		if err := rows.Scan(&val); err != nil {
+			return nil, err
+		}
 	}
 	return val, nil
 }
@@ -266,7 +271,7 @@ func (Postgres) GetTestCase(name string) (types.TestCase, error) {
 	if val, ok := pgNameToTestCase[name]; ok {
 		return val, nil
 	}
-	return types.TestCase{}, errors.New(fmt.Sprintf("postgres: Error getting testcase with name %v", name))
+	return types.TestCase{}, fmt.Errorf("postgres: Error getting testcase with name %v", name)
 }
 
 func parsePostgresFields(rows, fkRows *sql.Rows) ([]types.FieldDescriptor, error) {

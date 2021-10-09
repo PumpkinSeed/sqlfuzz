@@ -1,3 +1,4 @@
+//nolint:gocognit,cyclop
 package action
 
 import (
@@ -43,7 +44,7 @@ func (sqlInsertInput SQLInsertInput) Insert() error {
 	} else if sqlInsertInput.MultiInsertParams != nil {
 		return sqlInsertInput.multiInsert()
 	}
-	return errors.New("action: error in sql insert input. Both single and multi insert arguments are not initialised")
+	return errors.New("action: error in sql insert input. Both single and multi insert arguments are not initialized")
 }
 
 func (sqlInsertInput SQLInsertInput) multiInsert() error {
@@ -53,6 +54,7 @@ func (sqlInsertInput SQLInsertInput) multiInsert() error {
 	}
 	tableFieldValuesMap := make(map[string]map[string]interface{})
 	for _, table := range multiInsertParams.InsertionOrder {
+		//nolint:nestif
 		if fields, ok := multiInsertParams.TableToFieldsMap[table]; ok {
 			var f = make([]string, 0, len(fields))
 			var values []interface{}
@@ -64,12 +66,17 @@ func (sqlInsertInput SQLInsertInput) multiInsert() error {
 				var data interface{}
 				if field.ForeignKeyDescriptor != nil {
 					if foreignTableFields, ok := tableFieldValuesMap[field.ForeignKeyDescriptor.ForeignTableName]; ok {
+						// nolint:staticcheck
 						if val, ok := foreignTableFields[field.ForeignKeyDescriptor.ForeignColumnName]; ok {
 							data = val
-							continue
+							continue // TODO this can be an error
 						}
 					}
-					val, err := multiInsertParams.Driver.GetLatestColumnValue(field.ForeignKeyDescriptor.ForeignTableName, field.ForeignKeyDescriptor.ForeignColumnName, multiInsertParams.DB)
+					val, err := multiInsertParams.Driver.GetLatestColumnValue(
+						field.ForeignKeyDescriptor.ForeignTableName,
+						field.ForeignKeyDescriptor.ForeignColumnName,
+						multiInsertParams.DB,
+					)
 					if err != nil {
 						return err
 					}

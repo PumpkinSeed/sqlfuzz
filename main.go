@@ -24,7 +24,8 @@ func main() {
 		var err error
 		tables, err = driver.ShowTables(db)
 		if err != nil {
-			log.Fatal(err)
+			log.Print(err)
+			return
 		}
 	} else {
 		tables = []string{f.Table}
@@ -33,11 +34,13 @@ func main() {
 		f.Table = table
 		fields, err := driver.Describe(f.Table, db)
 		if err != nil {
-			log.Fatal(err.Error())
+			log.Print(err.Error())
+			return
 		}
 		t := time.Now()
 		if err := fuzzer.Run(fields, f); err != nil {
-			log.Fatal(err.Error())
+			log.Print(err.Error())
+			return
 		}
 		log.Printf("Fuzzing %s table taken: %v \n", table, time.Since(t))
 	}
