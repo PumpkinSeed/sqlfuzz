@@ -1,0 +1,178 @@
+run:
+  concurrency: 4
+  timeout: 5m
+  issues-exit-code: 1
+  tests: true
+  build-tags:
+    - mytag
+  modules-download-mode: vendor
+  skip-dirs-use-default: true
+  allow-parallel-runners: true
+output:
+  format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+  uniq-by-line: true
+  path-prefix: ""
+  sort-results: false
+
+linters-settings:
+  cyclop:
+    max-complexity: 15
+    package-average: 0.0
+    skip-tests: false
+
+  dupl:
+    threshold: 150
+
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+
+  errorlint:
+    errorf: true
+    asserts: false
+    comparison: true
+
+  forbidigo:
+    forbid:
+      - ^print.*$
+      - 'fmt\.Print.*'
+    exclude_godoc_examples: false
+
+  gocognit:
+    min-complexity: 30
+
+  nestif:
+    min-complexity: 5
+
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+
+  gocritic:
+    enabled-checks:
+      - rangeValCopy
+    disabled-checks:
+      - regexpMust
+    enabled-tags:
+      - performance
+    disabled-tags:
+      - experimental
+    settings:
+      captLocal:
+        paramsOnly: true
+      elseif:
+        skipBalanced: true
+      hugeParam:
+        sizeThreshold: 1700
+      nestingReduce:
+        bodyWidth: 5
+      rangeExprCopy:
+        sizeThreshold: 512
+        skipTestFuncs: true
+      rangeValCopy:
+        sizeThreshold: 1300
+        skipTestFuncs: true
+      ruleguard:
+        rules: ''
+      truncateCmp:
+        skipArchDependent: true
+      underef:
+        skipRecvDeref: true
+      unnamedResult:
+        checkExported: true
+
+  goimports:
+    local-prefixes: github.com/org/project
+
+  gosec:
+    includes:
+      - G401
+      - G306
+      - G101
+      - G110
+      - G204
+    config:
+      G306: "0600"
+      G101:
+        pattern: "(?i)example"
+        ignore_entropy: false
+        entropy_threshold: "80.0"
+        per_char_threshold: "3.0"
+        truncate: "32"
+
+  gosimple:
+    go: "1.16"
+    checks: [ "all" ]
+
+  govet:
+    check-shadowing: false
+
+    settings:
+      printf:
+        funcs:
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Infof
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Warnf
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Errorf
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Fatalf
+
+    enable:
+      - atomicalign
+    enable-all: false
+    disable:
+      - shadow
+    disable-all: false
+
+  staticcheck:
+    go: "1.16"
+    checks: [ "all" ]
+
+  ifshort:
+    max-decl-lines: 1
+    max-decl-chars: 30
+
+  lll:
+    line-length: 160
+    tab-width: 2
+
+  misspell:
+    locale: US
+
+  prealloc:
+    simple: true
+    range-loops: true
+    for-loops: false
+
+  unparam:
+    check-exported: false
+
+  unused:
+    go: "1.16"
+
+
+linters:
+  disable-all: false
+  disable:
+    - ineffassign
+  enable:
+    - cyclop
+    - errcheck
+    - errorlint
+    - forbidigo
+    - gocognit
+    - nestif
+    - goconst
+    - gocritic
+    - goimports
+    - gosec
+    - gosimple
+    - govet
+    - staticcheck
+    - ifshort
+    - lll
+    - misspell
+    - prealloc
+    - unparam
+    - unused
+  fast: true
