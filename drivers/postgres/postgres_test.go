@@ -1,4 +1,4 @@
-package drivers
+package postgres
 
 import (
 	"encoding/json"
