@@ -1,4 +1,4 @@
-package drivers
+package utils
 
 import (
 	"context"
@@ -14,7 +14,7 @@ const (
 	DefaultTableCreateQueryKey = ""
 )
 
-func multiDescribeHelper(tables []string, processedTables map[string]struct{}, db *sql.DB,
+func MultiDescribeHelper(tables []string, processedTables map[string]struct{}, db *sql.DB,
 	d types.Driver) (map[string][]types.FieldDescriptor, []string, error) {
 	knownTables := make(map[string]bool)
 	tableDescriptorMap := make(map[string][]types.FieldDescriptor)
@@ -43,7 +43,7 @@ func multiDescribeHelper(tables []string, processedTables map[string]struct{}, d
 	return tableDescriptorMap, newlyReferencedTables, nil
 }
 
-func getInsertionOrder(tablesToFieldsMap map[string][]types.FieldDescriptor) ([]string, error) {
+func GetInsertionOrder(tablesToFieldsMap map[string][]types.FieldDescriptor) ([]string, error) {
 	var tablesVisitOrder []string
 	tablesVisited := make(map[string]struct{})
 	for len(tablesVisitOrder) < len(tablesToFieldsMap) {
@@ -77,7 +77,7 @@ func getInsertionOrder(tablesToFieldsMap map[string][]types.FieldDescriptor) ([]
 	return tablesVisitOrder, nil
 }
 
-func testTable(db *sql.DB, testCase, table string, d types.Testable) error {
+func TestTable(db *sql.DB, testCase, table string, d types.Testable) error {
 	test, err := d.GetTestCase(testCase)
 	if err != nil {
 		return err

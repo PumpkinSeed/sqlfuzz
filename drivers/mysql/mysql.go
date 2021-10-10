@@ -1,4 +1,4 @@
-package drivers
+package mysql
 
 import (
 	"database/sql"
@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/PumpkinSeed/sqlfuzz/drivers/types"
+	"github.com/PumpkinSeed/sqlfuzz/drivers/utils"
 )
 
 const (
@@ -18,7 +19,7 @@ const (
 var (
 	mySQLNameToTestCase = map[string]types.TestCase{
 		"single": {
-			TableToCreateQueryMap: map[string]string{DefaultTableCreateQueryKey: `CREATE TABLE %s (
+			TableToCreateQueryMap: map[string]string{utils.DefaultTableCreateQueryKey: `CREATE TABLE %s (
 		id INT(6) UNSIGNED,
 		firstname VARCHAR(30),
 		lastname VARCHAR(30),
@@ -47,6 +48,10 @@ var (
 // MySQL implementation of the Driver
 type MySQL struct {
 	f types.Flags
+}
+
+func New(f types.Flags) MySQL {
+	return MySQL{f: f}
 }
 
 func (m MySQL) ShowTables(db *sql.DB) ([]string, error) {
@@ -214,7 +219,7 @@ func (m MySQL) MultiDescribe(tables []string, db *sql.DB) (tableToDescriptorMap 
 	processedTables := make(map[string]struct{})
 	tableToDescriptorMap = make(map[string][]types.FieldDescriptor)
 	for {
-		newTableToDescriptorMap, newlyReferencedTables, err := multiDescribeHelper(tables, processedTables, db, m)
+		newTableToDescriptorMap, newlyReferencedTables, err := utils.MultiDescribeHelper(tables, processedTables, db, m)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -226,7 +231,7 @@ func (m MySQL) MultiDescribe(tables []string, db *sql.DB) (tableToDescriptorMap 
 		}
 		tables = newlyReferencedTables
 	}
-	insertionOrder, err = getInsertionOrder(tableToDescriptorMap)
+	insertionOrder, err = utils.GetInsertionOrder(tableToDescriptorMap)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -250,7 +255,7 @@ func (MySQL) GetLatestColumnValue(table, column string, db *sql.DB) (interface{}
 
 // TestTable only for test purposes
 func (m MySQL) TestTable(db *sql.DB, testCase, table string) error {
-	return testTable(db, testCase, table, m)
+	return utils.TestTable(db, testCase, table, m)
 }
 
 func (MySQL) GetTestCase(name string) (types.TestCase, error) {
