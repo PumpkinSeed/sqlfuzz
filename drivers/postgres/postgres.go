@@ -1,5 +1,5 @@
 //nolint:lll
-package drivers
+package postgres
 
 import (
 	"database/sql"
@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/PumpkinSeed/sqlfuzz/drivers/types"
+	"github.com/PumpkinSeed/sqlfuzz/drivers/utils"
 )
 
 /*
@@ -93,7 +94,7 @@ WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_name='%s'
 var (
 	pgNameToTestCase = map[string]types.TestCase{
 		"single": {
-			TableToCreateQueryMap: map[string]string{DefaultTableCreateQueryKey: CreateTable},
+			TableToCreateQueryMap: map[string]string{utils.DefaultTableCreateQueryKey: CreateTable},
 			TableCreationOrder:    nil,
 		},
 		"multi": {
@@ -142,6 +143,12 @@ var (
 
 type Postgres struct {
 	f types.Flags
+}
+
+func New(f types.Flags) Postgres {
+	return Postgres{
+		f: f,
+	}
 }
 
 func (p Postgres) ShowTables(db *sql.DB) ([]string, error) {
@@ -216,7 +223,7 @@ func (p Postgres) MultiDescribe(tables []string, db *sql.DB) (map[string][]types
 	processedTables := make(map[string]struct{})
 	tableToDescriptorMap := make(map[string][]types.FieldDescriptor)
 	for {
-		newTableToDescriptorMap, newlyReferencedTables, err := multiDescribeHelper(tables, processedTables, db, p)
+		newTableToDescriptorMap, newlyReferencedTables, err := utils.MultiDescribeHelper(tables, processedTables, db, p)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -228,7 +235,7 @@ func (p Postgres) MultiDescribe(tables []string, db *sql.DB) (map[string][]types
 		}
 		tables = newlyReferencedTables
 	}
-	insertionOrder, err := getInsertionOrder(tableToDescriptorMap)
+	insertionOrder, err := utils.GetInsertionOrder(tableToDescriptorMap)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -264,7 +271,7 @@ func (p Postgres) GetLatestColumnValue(table, column string, db *sql.DB) (interf
 
 // TestTable only for test purposes
 func (p Postgres) TestTable(db *sql.DB, testCase, table string) error {
-	return testTable(db, testCase, table, p)
+	return utils.TestTable(db, testCase, table, p)
 }
 
 func (Postgres) GetTestCase(name string) (types.TestCase, error) {
