@@ -202,19 +202,6 @@ func (m MySQL) MapField(descriptor types.FieldDescriptor) types.Field {
 	return types.Field{Type: types.Unknown, Length: -1}
 }
 
-func (MySQL) Describe(table string, db *sql.DB) ([]types.FieldDescriptor, error) {
-	describeQuery := fmt.Sprintf("DESCRIBE %s;", table)
-	results, err := db.Query(describeQuery)
-	if err != nil {
-		return nil, err
-	}
-	fkRows, err := db.Query(fmt.Sprintf(mysqlFKQuery, strings.ToLower(table)))
-	if err != nil {
-		return nil, err
-	}
-	return parseMySQLFields(results, fkRows)
-}
-
 func (m MySQL) MultiDescribe(tables []string, db *sql.DB) (tableToDescriptorMap map[string][]types.FieldDescriptor, insertionOrder []string, err error) {
 	processedTables := make(map[string]struct{})
 	tableToDescriptorMap = make(map[string][]types.FieldDescriptor)
