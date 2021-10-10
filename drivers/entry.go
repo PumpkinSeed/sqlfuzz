@@ -3,6 +3,7 @@ package drivers
 import (
 	"log"
 
+	"github.com/PumpkinSeed/sqlfuzz/drivers/mysql"
 	"github.com/PumpkinSeed/sqlfuzz/drivers/postgres"
 	"github.com/PumpkinSeed/sqlfuzz/drivers/types"
 )
@@ -11,7 +12,7 @@ import (
 func New(f types.Flags) types.Driver {
 	switch f.Driver {
 	case "mysql":
-		return MySQL{f: f}
+		return mysql.New(f)
 	case "postgres":
 		return postgres.New(f)
 	default:
@@ -23,7 +24,7 @@ func New(f types.Flags) types.Driver {
 func NewTestable(f types.Flags) types.Testable {
 	switch f.Driver {
 	case "mysql":
-		return MySQL{f: f}
+		return mysql.New(f)
 	case "postgres":
 		return postgres.New(f)
 	default:

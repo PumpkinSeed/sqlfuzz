@@ -1,5 +1,5 @@
 //nolint:lll
-package drivers
+package mysql
 
 import (
 	"database/sql"
@@ -43,6 +43,10 @@ var (
 // MySQL implementation of the Driver
 type MySQL struct {
 	f types.Flags
+}
+
+func New(f types.Flags) MySQL {
+	return MySQL{f: f}
 }
 
 func (m MySQL) ShowTables(db *sql.DB) ([]string, error) {
