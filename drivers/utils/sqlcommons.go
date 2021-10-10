@@ -15,10 +15,9 @@ const (
 )
 
 func MultiDescribeHelper(tables []string, processedTables map[string]struct{}, db *sql.DB,
-	d types.Driver) (map[string][]types.FieldDescriptor, []string, error) {
+	d types.Driver) (tableDescriptorMap map[string][]types.FieldDescriptor, newlyReferencedTables []string, err error) {
 	knownTables := make(map[string]bool)
-	tableDescriptorMap := make(map[string][]types.FieldDescriptor)
-	var newlyReferencedTables []string
+	tableDescriptorMap = make(map[string][]types.FieldDescriptor)
 	for _, table := range tables {
 		knownTables[table] = true
 	}
