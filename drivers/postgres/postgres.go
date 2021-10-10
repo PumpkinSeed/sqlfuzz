@@ -1,4 +1,3 @@
-//nolint:lll
 package postgres
 
 import (
@@ -68,7 +67,8 @@ const CreateTable = `CREATE TABLE IF NOT EXISTS %s (
 `
 
 const (
-	PSQLDescribeTemplate   = "select column_name, data_type, character_maximum_length, column_default, is_nullable,numeric_precision,numeric_scale from INFORMATION_SCHEMA.COLUMNS where table_name = '%s'"
+	PSQLDescribeTemplate = `select column_name, data_type, character_maximum_length, column_default, is_nullable,numeric_precision,numeric_scale
+                            from INFORMATION_SCHEMA.COLUMNS where table_name = '%s'`
 	PSQLConnectionTemplate = "host=%s port=%s user=%s password=%s dbname=%s sslmode=disable"
 	PSQLInsertTemplate     = `INSERT INTO %s("%s") VALUES(%s)`
 	PSQLShowTablesQuery    = "SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema';"
@@ -219,9 +219,9 @@ func (p Postgres) MapField(descriptor types.FieldDescriptor) types.Field {
 	return field
 }
 
-func (p Postgres) MultiDescribe(tables []string, db *sql.DB) (map[string][]types.FieldDescriptor, []string, error) {
+func (p Postgres) MultiDescribe(tables []string, db *sql.DB) (tableToDescriptorMap map[string][]types.FieldDescriptor, insertionOrder []string, err error) {
 	processedTables := make(map[string]struct{})
-	tableToDescriptorMap := make(map[string][]types.FieldDescriptor)
+	tableToDescriptorMap = make(map[string][]types.FieldDescriptor)
 	for {
 		newTableToDescriptorMap, newlyReferencedTables, err := utils.MultiDescribeHelper(tables, processedTables, db, p)
 		if err != nil {
@@ -235,7 +235,7 @@ func (p Postgres) MultiDescribe(tables []string, db *sql.DB) (map[string][]types
 		}
 		tables = newlyReferencedTables
 	}
-	insertionOrder, err := utils.GetInsertionOrder(tableToDescriptorMap)
+	insertionOrder, err = utils.GetInsertionOrder(tableToDescriptorMap)
 	if err != nil {
 		return nil, nil, err
 	}

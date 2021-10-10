@@ -15,10 +15,9 @@ const (
 )
 
 func MultiDescribeHelper(tables []string, processedTables map[string]struct{}, db *sql.DB,
-	d types.Driver) (map[string][]types.FieldDescriptor, []string, error) {
+	d types.Driver) (tableDescriptorMap map[string][]types.FieldDescriptor, newlyReferencedTables []string, err error) {
 	knownTables := make(map[string]bool)
-	tableDescriptorMap := make(map[string][]types.FieldDescriptor)
-	var newlyReferencedTables []string
+	tableDescriptorMap = make(map[string][]types.FieldDescriptor)
 	for _, table := range tables {
 		knownTables[table] = true
 	}
@@ -83,22 +82,21 @@ func TestTable(db *sql.DB, testCase, table string, d types.Testable) error {
 		return err
 	}
 
-	//nolint:nestif
-	if test.TableCreationOrder == nil {
-		if query, ok := test.TableToCreateQueryMap[DefaultTableCreateQueryKey]; ok {
-			if res, err := db.ExecContext(context.Background(), fmt.Sprintf(query, table)); err != nil {
-				return err
-			} else if _, err := res.RowsAffected(); err != nil {
-				return err
-			}
-		}
-	} else {
+	if test.TableCreationOrder != nil {
 		for _, table := range test.TableCreationOrder {
 			createCommand := test.TableToCreateQueryMap[table]
 			_, err := db.Query(strings.TrimSpace(createCommand))
 			if err != nil {
 				return err
 			}
+		}
+		return nil
+	}
+	if query, ok := test.TableToCreateQueryMap[DefaultTableCreateQueryKey]; ok {
+		if res, err := db.ExecContext(context.Background(), fmt.Sprintf(query, table)); err != nil {
+			return err
+		} else if _, err := res.RowsAffected(); err != nil {
+			return err
 		}
 	}
 	return nil
