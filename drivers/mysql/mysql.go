@@ -262,7 +262,7 @@ func (MySQL) GetTestCase(name string) (types.TestCase, error) {
 	if val, ok := mySQLNameToTestCase[name]; ok {
 		return val, nil
 	}
-	return types.TestCase{}, fmt.Errorf("postgres: Error getting testcase with name %v", name)
+	return types.TestCase{}, fmt.Errorf("mysql: Error getting testcase with name %v", name)
 }
 
 func parseMySQLFields(results, fkRows *sql.Rows) ([]types.FieldDescriptor, error) {
