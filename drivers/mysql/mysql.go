@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	MySQLDescribeTemplate = `select column_name, data_type, character_maximum_length, column_default, is_nullable,numeric_precision,numeric_scale
+	MySQLDescribeTemplate = `select column_name, data_type, character_maximum_length, column_default, is_nullable,numeric_precision,numeric_scale,extra,column_key
                             from INFORMATION_SCHEMA.COLUMNS where table_name = '%s'`
 	MySQLDescribeTableQuery = "SHOW TABLES;"
 	mysqlFKQuery            = `SELECT CONSTRAINT_NAME,TABLE_NAME,COLUMN_NAME,REFERENCED_TABLE_NAME,REFERENCED_COLUMN_NAME 
@@ -96,32 +96,16 @@ func (m MySQL) MapField(descriptor types.FieldDescriptor) types.Field {
 	field := strings.ToLower(descriptor.Type)
 	// String types
 	if strings.HasPrefix(field, "varchar") {
-		l := length(field, "varchar")
-		if l == nil || len(l) < 1 {
-			return types.Field{Type: types.Unknown, Length: -1}
-		}
-		return types.Field{Type: types.String, Length: l[0]}
+		return types.Field{Type: types.String, Length: int16(descriptor.Length.Int)}
 	}
 	if strings.HasPrefix(field, "char") {
-		l := length(field, "char")
-		if l == nil || len(l) < 1 {
-			return types.Field{Type: types.Unknown, Length: -1}
-		}
-		return types.Field{Type: types.String, Length: l[0]}
+		return types.Field{Type: types.String, Length: int16(descriptor.Length.Int)}
 	}
 	if strings.HasPrefix(field, "varbinary") {
-		l := length(field, "varbinary")
-		if l == nil || len(l) < 1 {
-			return types.Field{Type: types.Unknown, Length: -1}
-		}
-		return types.Field{Type: types.String, Length: l[0]}
+		return types.Field{Type: types.String, Length: int16(descriptor.Length.Int)}
 	}
 	if strings.HasPrefix(field, "binary") {
-		l := length(field, "binary")
-		if l == nil || len(l) < 1 {
-			return types.Field{Type: types.Unknown, Length: -1}
-		}
-		return types.Field{Type: types.String, Length: l[0]}
+		return types.Field{Type: types.String, Length: int16(descriptor.Length.Int)}
 	}
 
 	// Numeric types
@@ -140,25 +124,13 @@ func (m MySQL) MapField(descriptor types.FieldDescriptor) types.Field {
 
 	// Float types
 	if strings.HasPrefix(field, "decimal") {
-		l := length(field, "decimal")
-		if l == nil || len(l) < 2 || l[0] < l[1] {
-			return types.Field{Type: types.Unknown, Length: -1}
-		}
-		return types.Field{Type: types.Float, Length: l[0] - l[1]}
+		return types.Field{Type: types.Float, Length: int16(descriptor.Length.Int)}
 	}
 	if strings.HasPrefix(field, "float") {
-		l := length(field, "float")
-		if l == nil || len(l) < 2 || l[0] < l[1] {
-			return types.Field{Type: types.Unknown, Length: -1}
-		}
-		return types.Field{Type: types.Float, Length: l[0] - l[1]}
+		return types.Field{Type: types.Float, Length: int16(descriptor.Length.Int)}
 	}
 	if strings.HasPrefix(field, "double") {
-		l := length(field, "double")
-		if l == nil || len(l) < 2 || l[0] < l[1] {
-			return types.Field{Type: types.Unknown, Length: -1}
-		}
-		return types.Field{Type: types.Float, Length: l[0] - l[1]}
+		return types.Field{Type: types.Float, Length: int16(descriptor.Length.Int)}
 	}
 
 	// Blob
@@ -193,6 +165,7 @@ func (m MySQL) MapField(descriptor types.FieldDescriptor) types.Field {
 	}
 
 	// Enum
+	// TODO deal with enums
 	if strings.HasPrefix(field, "enum") {
 		f := strings.ReplaceAll(field, "enum(", "")
 		f = strings.ReplaceAll(f, ")", "")
@@ -280,7 +253,9 @@ func parseMySQLFields(results, fkRows *sql.Rows) ([]types.FieldDescriptor, error
 	}
 	for results.Next() {
 		var field types.FieldDescriptor
-		err := results.Scan(&field.Field, &field.Type, &field.Length, &field.Default, &field.Null, &field.Precision, &field.Scale)
+		// results.Scan(&d.Field, &d.Type, &d.Null, &d.Key, &d.Default, &d.Extra)
+		// column_name, data_type, character_maximum_length, column_default, is_nullable,numeric_precision,numeric_scale,extra,column_key
+		err := results.Scan(&field.Field, &field.Type, &field.Length, &field.Default, &field.Null, &field.Precision, &field.Scale, &field.Extra, &field.Key)
 		if err != nil {
 			return nil, err
 		}
