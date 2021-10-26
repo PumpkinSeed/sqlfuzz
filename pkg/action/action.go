@@ -195,7 +195,7 @@ func generateData(driver types.Driver, fieldDescriptor types.FieldDescriptor) in
 	case types.BinaryString:
 		return binaryString(int(field.Length))
 	case types.Unknown:
-		log.Printf("unknown field type: %s\n", fieldDescriptor.Field)
+		log.Printf("unknown field type: %s (%s)\n", fieldDescriptor.Field, fieldDescriptor.Type)
 		return nil
 	}
 
