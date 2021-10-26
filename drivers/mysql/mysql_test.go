@@ -1,11 +1,39 @@
 package mysql
 
 import (
+	"database/sql"
 	"reflect"
 	"testing"
 
 	"github.com/PumpkinSeed/sqlfuzz/drivers/types"
+	_ "github.com/go-sql-driver/mysql"
 )
+
+func TestDescribe(t *testing.T) {
+	// Describe(table string, db *sql.DB)
+	db, err := sql.Open("mysql", "test:test@tcp(localhost:3306)/test")
+	if err != nil {
+		t.Error(err)
+	}
+
+	m := MySQL{}
+	descriptors, err := m.Describe("t_product", db)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if descriptors[0].Field != "id" {
+		t.Error("First should be id")
+	}
+	if descriptors[1].Field != "name" {
+		t.Error("Second should be name")
+	}
+	if descriptors[len(descriptors)-1].Field != "currency_id" {
+		t.Error("Last should be currency_id")
+	}
+
+	t.Log(descriptors)
+}
 
 func TestMapField(t *testing.T) {
 	var scenarios = []struct {
