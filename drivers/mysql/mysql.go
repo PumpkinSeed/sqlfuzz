@@ -10,6 +10,8 @@ import (
 )
 
 const (
+	MySQLDescribeTemplate = `select column_name, data_type, character_maximum_length, column_default, is_nullable,numeric_precision,numeric_scale
+                            from INFORMATION_SCHEMA.COLUMNS where table_name = '%s'`
 	MySQLDescribeTableQuery = "SHOW TABLES;"
 	mysqlFKQuery            = `SELECT CONSTRAINT_NAME,TABLE_NAME,COLUMN_NAME,REFERENCED_TABLE_NAME,REFERENCED_COLUMN_NAME 
 							   from INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
@@ -203,7 +205,7 @@ func (m MySQL) MapField(descriptor types.FieldDescriptor) types.Field {
 }
 
 func (MySQL) Describe(table string, db *sql.DB) ([]types.FieldDescriptor, error) {
-	describeQuery := fmt.Sprintf("DESCRIBE %s;", table)
+	describeQuery := fmt.Sprintf(MySQLDescribeTemplate, table)
 	results, err := db.Query(describeQuery)
 	if err != nil {
 		return nil, err
@@ -277,15 +279,15 @@ func parseMySQLFields(results, fkRows *sql.Rows) ([]types.FieldDescriptor, error
 		columnToFKMap[fk.ColumnName] = fk
 	}
 	for results.Next() {
-		var d types.FieldDescriptor
-		err := results.Scan(&d.Field, &d.Type, &d.Null, &d.Key, &d.Default, &d.Extra)
+		var field types.FieldDescriptor
+		err := results.Scan(&field.Field, &field.Type, &field.Length, &field.Default, &field.Null, &field.Precision, &field.Scale)
 		if err != nil {
 			return nil, err
 		}
-		if val, ok := columnToFKMap[d.Field]; ok {
-			d.ForeignKeyDescriptor = &val
+		if val, ok := columnToFKMap[field.Field]; ok {
+			field.ForeignKeyDescriptor = &val
 		}
-		fields = append(fields, d)
+		fields = append(fields, field)
 	}
 	return fields, nil
 }
