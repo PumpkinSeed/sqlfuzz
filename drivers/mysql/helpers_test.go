@@ -29,7 +29,11 @@ func TestLength(t *testing.T) {
 	}
 
 	for _, scenario := range scenarios {
-		out := length(scenario.input, scenario.t)
+		out, err := length(scenario.input, scenario.t)
+		if err != nil {
+			t.Errorf("Unexpected error for input %q: %v", scenario.input, err)
+			continue
+		}
 		if !reflect.DeepEqual(scenario.output, out) {
 			t.Errorf("Output doesn't match with the scenario: %v, out: %v", scenario.output, out)
 		}
