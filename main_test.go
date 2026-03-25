@@ -33,9 +33,18 @@ func TestFuzz(t *testing.T) {
 	f.Seed = 1
 
 	gofakeit.Seed(int64(f.Seed))
-	driver := drivers.New(f.Driver)
-	testable := drivers.NewTestable(f.Driver)
-	db := connector.Connection(driver, f)
+	driver, err := drivers.New(f.Driver)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testable, err := drivers.NewTestable(f.Driver)
+	if err != nil {
+		t.Fatal(err)
+	}
+	db, err := connector.Connection(driver, f)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer db.Close()
 	if _, err := db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s", f.Table)); err != nil {
 		t.Fatal(err)
@@ -91,9 +100,18 @@ func TestFuzzPostgres(t *testing.T) {
 	f.Seed = 1
 
 	gofakeit.Seed(int64(f.Seed))
-	driver := drivers.New(f.Driver)
-	testable := drivers.NewTestable(f.Driver)
-	db := connector.Connection(driver, f)
+	driver, err := drivers.New(f.Driver)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testable, err := drivers.NewTestable(f.Driver)
+	if err != nil {
+		t.Fatal(err)
+	}
+	db, err := connector.Connection(driver, f)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer db.Close()
 	if _, err := db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s", f.Table)); err != nil {
 		t.Fatal(err)
@@ -159,13 +177,22 @@ func TestMysqlMultiInsert(t *testing.T) {
 	f.Seed = 1
 
 	gofakeit.Seed(int64(f.Seed))
-	driver := drivers.New(f.Driver)
-	testable := drivers.NewTestable(f.Driver)
+	driver, err := drivers.New(f.Driver)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testable, err := drivers.NewTestable(f.Driver)
+	if err != nil {
+		t.Fatal(err)
+	}
 	test, err := testable.GetTestCase("multi")
 	if err != nil {
-		t.Error(fmt.Sprintf("postgres : error fetching test case for multi. %v", err.Error()))
+		t.Fatal(fmt.Sprintf("mysql: error fetching test case for multi. %v", err.Error()))
 	}
-	db := connector.Connection(driver, f)
+	db, err := connector.Connection(driver, f)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer db.Close()
 	if _, err := db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s", f.Table)); err != nil {
 		t.Fatal(err)
@@ -201,13 +228,22 @@ func TestPostgresMultiInsert(t *testing.T) {
 	f.Seed = 1
 
 	gofakeit.Seed(int64(f.Seed))
-	driver := drivers.New(f.Driver)
-	testable := drivers.NewTestable(f.Driver)
+	driver, err := drivers.New(f.Driver)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testable, err := drivers.NewTestable(f.Driver)
+	if err != nil {
+		t.Fatal(err)
+	}
 	test, err := testable.GetTestCase("multi")
 	if err != nil {
-		t.Error(fmt.Sprintf("postgres : error fetching test case for multi. %v", err.Error()))
+		t.Fatal(fmt.Sprintf("postgres: error fetching test case for multi. %v", err.Error()))
 	}
-	db := connector.Connection(driver, f)
+	db, err := connector.Connection(driver, f)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer db.Close()
 	if _, err := db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s", f.Table)); err != nil {
 		t.Fatal(err)

@@ -1,7 +1,7 @@
 package drivers
 
 import (
-	"log"
+	"fmt"
 
 	"github.com/PumpkinSeed/sqlfuzz/drivers/mysql"
 	"github.com/PumpkinSeed/sqlfuzz/drivers/postgres"
@@ -9,26 +9,24 @@ import (
 )
 
 // New creates a new driver instance based on the flags
-func New(f types.Flags) types.Driver {
+func New(f types.Flags) (types.Driver, error) {
 	switch f.Driver {
 	case "mysql":
-		return mysql.New(f)
+		return mysql.New(f), nil
 	case "postgres":
-		return postgres.New(f)
+		return postgres.New(f), nil
 	default:
-		log.Fatal("Driver not implemented")
-		return nil
+		return nil, fmt.Errorf("driver %q not implemented", f.Driver)
 	}
 }
 
-func NewTestable(f types.Flags) types.Testable {
+func NewTestable(f types.Flags) (types.Testable, error) {
 	switch f.Driver {
 	case "mysql":
-		return mysql.New(f)
+		return mysql.New(f), nil
 	case "postgres":
-		return postgres.New(f)
+		return postgres.New(f), nil
 	default:
-		log.Fatal("Testable not implemented")
-		return nil
+		return nil, fmt.Errorf("testable %q not implemented", f.Driver)
 	}
 }

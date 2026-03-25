@@ -15,17 +15,21 @@ import (
 func main() {
 	f := flags.Get()
 	gofakeit.Seed(int64(f.Seed))
-	driver := drivers.New(f.Driver)
-	db := connector.Connection(driver, f)
+	driver, err := drivers.New(f.Driver)
+	if err != nil {
+		log.Fatal(err)
+	}
+	db, err := connector.Connection(driver, f)
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer db.Close()
 
 	var tables []string
 	if f.Table == "" {
-		var err error
 		tables, err = driver.ShowTables(db)
 		if err != nil {
-			log.Print(err)
-			return
+			log.Fatal(err)
 		}
 	} else {
 		tables = []string{f.Table}
@@ -34,13 +38,11 @@ func main() {
 		f.Table = table
 		fields, err := driver.Describe(f.Table, db)
 		if err != nil {
-			log.Print(err.Error())
-			return
+			log.Fatal(err)
 		}
 		t := time.Now()
 		if err := fuzzer.Run(fields, f); err != nil {
-			log.Print(err.Error())
-			return
+			log.Fatal(err)
 		}
 		log.Printf("Fuzzing %s table taken: %v \n", table, time.Since(t))
 	}

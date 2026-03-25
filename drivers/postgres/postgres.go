@@ -68,26 +68,26 @@ const CreateTable = `CREATE TABLE IF NOT EXISTS %s (
 
 const (
 	PSQLDescribeTemplate = `select column_name, data_type, character_maximum_length, column_default, is_nullable,numeric_precision,numeric_scale
-                            from INFORMATION_SCHEMA.COLUMNS where table_name = '%s'`
+                            from INFORMATION_SCHEMA.COLUMNS where table_name = $1`
 	PSQLConnectionTemplate = "host=%s port=%s user=%s password=%s dbname=%s sslmode=disable"
 	PSQLInsertTemplate     = `INSERT INTO %s("%s") VALUES(%s)`
 	PSQLShowTablesQuery    = "SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema';"
-	psqlForeignKeysQuery   = `
+	psqlForeignKeysQuery = `
 	SELECT
-    tc.constraint_name, 
-    tc.table_name, 
-    kcu.column_name, 
+    tc.constraint_name,
+    tc.table_name,
+    kcu.column_name,
     ccu.table_name AS foreign_table_name,
-    ccu.column_name AS foreign_column_name 
-FROM 
-    information_schema.table_constraints AS tc 
+    ccu.column_name AS foreign_column_name
+FROM
+    information_schema.table_constraints AS tc
     JOIN information_schema.key_column_usage AS kcu
       ON tc.constraint_name = kcu.constraint_name
       AND tc.table_schema = kcu.table_schema
     JOIN information_schema.constraint_column_usage AS ccu
       ON ccu.constraint_name = tc.constraint_name
       AND ccu.table_schema = tc.table_schema
-WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_name='%s'
+WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_name=$1
 	`
 )
 
@@ -243,11 +243,11 @@ func (p Postgres) MultiDescribe(tables []string, db *sql.DB) (tableToDescriptorM
 }
 
 func (p Postgres) Describe(table string, db *sql.DB) ([]types.FieldDescriptor, error) {
-	results, err := db.Query(fmt.Sprintf(PSQLDescribeTemplate, strings.ToLower(table)))
+	results, err := db.Query(PSQLDescribeTemplate, strings.ToLower(table))
 	if err != nil {
 		return nil, err
 	}
-	fkResults, err := db.Query(fmt.Sprintf(psqlForeignKeysQuery, strings.ToLower(table)))
+	fkResults, err := db.Query(psqlForeignKeysQuery, strings.ToLower(table))
 	if err != nil {
 		return nil, err
 	}
@@ -255,7 +255,7 @@ func (p Postgres) Describe(table string, db *sql.DB) ([]types.FieldDescriptor, e
 }
 
 func (p Postgres) GetLatestColumnValue(table, column string, db *sql.DB) (interface{}, error) {
-	query := fmt.Sprintf("select %s from %s order by %s desc limit 1", column, table, column)
+	query := fmt.Sprintf(`select "%s" from "%s" order by "%s" desc limit 1`, column, table, column)
 	rows, err := db.Query(query)
 	if err != nil {
 		return nil, err

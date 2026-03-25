@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"log"
 	"math"
-	"math/rand"
 	"strconv"
 	"strings"
 	"time"
@@ -75,9 +74,10 @@ func (sqlInsertInput SQLInsertInput) multiInsert() error {
 			if foreignTableFields, ok := tableFieldValuesMap[field.ForeignKeyDescriptor.ForeignTableName]; ok {
 				if val, ok := foreignTableFields[field.ForeignKeyDescriptor.ForeignColumnName]; ok {
 					values = append(values, val)
-					continue // TODO this can be an error
+					continue
 				}
 			}
+			// Foreign key value not found in cache — fall through to DB lookup
 			val, err := multiInsertParams.Driver.GetLatestColumnValue(
 				field.ForeignKeyDescriptor.ForeignTableName,
 				field.ForeignKeyDescriptor.ForeignColumnName,
@@ -86,8 +86,11 @@ func (sqlInsertInput SQLInsertInput) multiInsert() error {
 			if err != nil {
 				return err
 			}
+			if val == nil {
+				return fmt.Errorf("action: no foreign key value found for %s.%s referenced by %s",
+					field.ForeignKeyDescriptor.ForeignTableName, field.ForeignKeyDescriptor.ForeignColumnName, field.Field)
+			}
 			values = append(values, val)
-			// Get from table. If no value present in table as well, throw error.
 		}
 		query := multiInsertParams.Driver.Insert(f, table)
 		_, err := multiInsertParams.DB.Exec(query, values...)
@@ -202,17 +205,15 @@ func generateData(driver types.Driver, fieldDescriptor types.FieldDescriptor) in
 	return nil
 }
 
-// randomString generates a length size random string
+// randomString generates a length size random string using gofakeit's seeded RNG
+// so that results are reproducible when a seed is set
 func randomString(length int16) string {
 	var charset = "abcdefghijklmnopqrstuvwxyz" +
 		"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
-	var seededRand = rand.New(
-		rand.NewSource(time.Now().UnixNano()))
-
 	b := make([]byte, length)
 	for i := range b {
-		b[i] = charset[seededRand.Intn(len(charset))]
+		b[i] = charset[gofakeit.Number(0, len(charset)-1)]
 	}
 
 	return string(b)

@@ -11,11 +11,11 @@ import (
 
 const (
 	MySQLDescribeTemplate = `select column_name, data_type, character_maximum_length, column_default, is_nullable,numeric_precision,numeric_scale,extra,column_key
-                            from INFORMATION_SCHEMA.COLUMNS where table_name = '%s'`
+                            from INFORMATION_SCHEMA.COLUMNS where table_name = ?`
 	MySQLDescribeTableQuery = "SHOW TABLES;"
-	mysqlFKQuery            = `SELECT CONSTRAINT_NAME,TABLE_NAME,COLUMN_NAME,REFERENCED_TABLE_NAME,REFERENCED_COLUMN_NAME 
-							   from INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
-                               where REFERENCED_TABLE_NAME <> 'NULL' and REFERENCED_COLUMN_NAME <> 'NULL' and TABLE_NAME = '%s'`
+	mysqlFKQuery            = `SELECT CONSTRAINT_NAME,TABLE_NAME,COLUMN_NAME,REFERENCED_TABLE_NAME,REFERENCED_COLUMN_NAME
+							   from INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+                               where REFERENCED_TABLE_NAME <> 'NULL' and REFERENCED_COLUMN_NAME <> 'NULL' and TABLE_NAME = ?`
 )
 
 var (
@@ -178,12 +178,11 @@ func (m MySQL) MapField(descriptor types.FieldDescriptor) types.Field {
 }
 
 func (MySQL) Describe(table string, db *sql.DB) ([]types.FieldDescriptor, error) {
-	describeQuery := fmt.Sprintf(MySQLDescribeTemplate, table)
-	results, err := db.Query(describeQuery)
+	results, err := db.Query(MySQLDescribeTemplate, table)
 	if err != nil {
 		return nil, err
 	}
-	fkRows, err := db.Query(fmt.Sprintf(mysqlFKQuery, strings.ToLower(table)))
+	fkRows, err := db.Query(mysqlFKQuery, strings.ToLower(table))
 	if err != nil {
 		return nil, err
 	}
@@ -214,7 +213,7 @@ func (m MySQL) MultiDescribe(tables []string, db *sql.DB) (tableToDescriptorMap 
 }
 
 func (MySQL) GetLatestColumnValue(table, column string, db *sql.DB) (interface{}, error) {
-	query := fmt.Sprintf("select %v from %v order by %v desc limit 1", column, table, column)
+	query := fmt.Sprintf("select `%s` from `%s` order by `%s` desc limit 1", column, table, column)
 	rows, err := db.Query(query)
 	if err != nil {
 		return nil, err

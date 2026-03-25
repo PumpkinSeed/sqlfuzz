@@ -31,7 +31,7 @@ func MultiDescribeHelper(tables []string, processedTables map[string]struct{}, d
 				continue
 			}
 			foreignTableName := field.ForeignKeyDescriptor.ForeignTableName
-			if _, ok := processedTables[foreignTableName]; ok && !knownTables[foreignTableName] {
+			if _, ok := processedTables[foreignTableName]; !ok && !knownTables[foreignTableName] {
 				newlyReferencedTables = append(newlyReferencedTables, foreignTableName)
 				knownTables[foreignTableName] = true
 			}

@@ -1,7 +1,7 @@
 package fuzzer
 
 import (
-	"database/sql"
+	"fmt"
 	"log"
 	"sync"
 
@@ -13,20 +13,26 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func getDriverAndDB(f flags.Flags) (types.Driver, *sql.DB) {
-	driver := drivers.New(f.Driver)
-	db := connector.Connection(driver, f)
-	return driver, db
+func getDriverAndDB(f flags.Flags) (types.Driver, error) {
+	driver, err := drivers.New(f.Driver)
+	if err != nil {
+		return nil, fmt.Errorf("fuzzer: %w", err)
+	}
+	return driver, nil
 }
 
 func runHelper(f flags.Flags, input action.SQLInsertInput) error {
 	numJobs := f.Num
 	workers := f.Workers
 	jobs := make(chan struct{}, numJobs)
+
+	var mu sync.Mutex
+	var firstErr error
+
 	wg := &sync.WaitGroup{}
 	wg.Add(workers)
 	for w := 0; w < workers; w++ {
-		go worker(jobs, wg, f, input)
+		go worker(jobs, wg, &mu, &firstErr, input)
 	}
 
 	for j := 0; j < numJobs; j++ {
@@ -35,28 +41,33 @@ func runHelper(f flags.Flags, input action.SQLInsertInput) error {
 	close(jobs)
 	wg.Wait()
 
-	return nil
+	return firstErr
 }
 
-func worker(jobs <-chan struct{}, wg *sync.WaitGroup, f flags.Flags, input action.SQLInsertInput) {
+func worker(jobs <-chan struct{}, wg *sync.WaitGroup, mu *sync.Mutex, firstErr *error, input action.SQLInsertInput) {
 	defer wg.Done()
-	driver := drivers.New(f.Driver)
-	db := connector.Connection(driver, f)
-	defer func() {
-		if err := db.Close(); err != nil {
-			log.Print(err)
-		}
-	}()
 	for range jobs {
 		if err := input.Insert(); err != nil {
 			log.Println(err)
+			mu.Lock()
+			if *firstErr == nil {
+				*firstErr = err
+			}
+			mu.Unlock()
 		}
 	}
 }
 
 // Run the commands in a worker pool
 func Run(fields []types.FieldDescriptor, f flags.Flags) error {
-	driver, db := getDriverAndDB(f)
+	driver, err := getDriverAndDB(f)
+	if err != nil {
+		return err
+	}
+	db, err := connector.Connection(driver, f)
+	if err != nil {
+		return fmt.Errorf("fuzzer: %w", err)
+	}
 	defer func() {
 		if err := db.Close(); err != nil {
 			log.Print(err)
@@ -74,7 +85,14 @@ func Run(fields []types.FieldDescriptor, f flags.Flags) error {
 }
 
 func RunMulti(tableToFieldsMap map[string][]types.FieldDescriptor, insertionOrder []string, f flags.Flags) error {
-	driver, db := getDriverAndDB(f)
+	driver, err := getDriverAndDB(f)
+	if err != nil {
+		return err
+	}
+	db, err := connector.Connection(driver, f)
+	if err != nil {
+		return fmt.Errorf("fuzzer: %w", err)
+	}
 	defer func() {
 		if err := db.Close(); err != nil {
 			log.Print(err)
